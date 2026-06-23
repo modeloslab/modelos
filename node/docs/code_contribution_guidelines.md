@@ -59,7 +59,7 @@ security and performance implications.
 
 ## Required Reading
 
-- [Effective Go](http://golang.org/doc/effective_go.html) - The entire pearld
+- [Effective Go](http://golang.org/doc/effective_go.html) - The entire modelosd
   suite follows the guidelines in this document.  For your code to be accepted,
   it must follow the guidelines therein.
 - [Original Satoshi Whitepaper](http://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&ved=0CCkQFjAA&url=http%3A%2F%2Fbitcoin.org%2Fbitcoin.pdf&ei=os3VUuH8G4SlsASV74GoAg&usg=AFQjCNEipPLigou_1MfB7DQjXCNdlylrBg&sig2=FaHDuT5z36GMWDEnybDJLg&bvm=bv.59378465,d.b2I) - This is the white paper that started it all.  Having a solid
@@ -255,7 +255,7 @@ a good thing.
 ## Code Approval Process
 
 This section describes the code approval process that is used for code
-contributions.  This is how to get your changes into pearld.
+contributions.  This is how to get your changes into modelosd.
 
 ## Code Review
 

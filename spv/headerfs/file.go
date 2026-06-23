@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // ErrHeaderNotFound is returned when a target header on disk (flat file) can't

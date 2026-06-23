@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/rpcclient"
+	"github.com/modelos/modelos/node/wire"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	// Connect to local pearld RPC server using websockets.
-	pearldHomeDir := btcutil.AppDataDir("pearld", false)
+	pearldHomeDir := btcutil.AppDataDir("modelosd", false)
 	certs, err := os.ReadFile(filepath.Join(pearldHomeDir, "rpc.cert"))
 	if err != nil {
 		log.Fatal(err)

@@ -2,16 +2,16 @@ package neutrino
 
 import (
 	"github.com/btcsuite/btclog"
-	"github.com/pearl-research-labs/pearl/node/addrmgr"
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/connmgr"
-	"github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/spv/blockntfns"
-	"github.com/pearl-research-labs/pearl/spv/chanutils"
-	"github.com/pearl-research-labs/pearl/spv/filterdb"
-	"github.com/pearl-research-labs/pearl/spv/pushtx"
-	"github.com/pearl-research-labs/pearl/spv/query"
+	"github.com/modelos/modelos/node/addrmgr"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/connmgr"
+	"github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/spv/blockntfns"
+	"github.com/modelos/modelos/spv/chanutils"
+	"github.com/modelos/modelos/spv/filterdb"
+	"github.com/modelos/modelos/spv/pushtx"
+	"github.com/modelos/modelos/spv/query"
 )
 
 // log is a logger that is initialized with no output filters.  This

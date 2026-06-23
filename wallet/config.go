@@ -17,13 +17,13 @@ import (
 	"time"
 
 	flags "github.com/jessevdk/go-flags"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	neutrino "github.com/pearl-research-labs/pearl/spv"
-	"github.com/pearl-research-labs/pearl/wallet/internal/cfgutil"
-	"github.com/pearl-research-labs/pearl/wallet/netparams"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	neutrino "github.com/modelos/modelos/spv"
+	"github.com/modelos/modelos/wallet/internal/cfgutil"
+	"github.com/modelos/modelos/wallet/netparams"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet"
 )
 
 const (

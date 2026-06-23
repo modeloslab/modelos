@@ -12,11 +12,17 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 mod common;
 mod mine;
+mod prove;
+mod serialize;
 mod verify;
 
-pub use common::CZKProof;
+pub use common::{CZKProof, PUBLICDATA_MAX_SIZE, PUBLICDATA_SIZE};
 pub use zk_pow::api::proof::{IncompleteBlockHeader, MiningConfiguration};
 
 pub use mine::mine;
-pub use verify::verify_zk_proof;
-pub use verify::verify_zk_proof_with_nbits;
+pub use prove::prove_plain_proof;
+pub use serialize::{serialize_plain_proof, zk_pow_free_buffer, CMatrixProofIn};
+pub use verify::verify_plain_proof;
+pub use verify::verify_zk_proof_v1;
+pub use verify::verify_zk_proof_v2;
+pub use verify::verify_zk_proof_v2_with_nbits;

@@ -12,7 +12,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 const (

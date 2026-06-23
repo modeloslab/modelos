@@ -9,9 +9,9 @@ package neutrino
 import (
 	"errors"
 
-	"github.com/pearl-research-labs/pearl/node/addrmgr"
-	"github.com/pearl-research-labs/pearl/node/connmgr"
-	"github.com/pearl-research-labs/pearl/spv/query"
+	"github.com/modelos/modelos/node/addrmgr"
+	"github.com/modelos/modelos/node/connmgr"
+	"github.com/modelos/modelos/spv/query"
 )
 
 type getConnCountMsg struct {

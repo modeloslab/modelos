@@ -25,6 +25,7 @@ miner-base = {workspace = true}
 pearl-gateway = {workspace = true}
 py-pearl-mining = {workspace = true}
 vllm-miner = {workspace = true}
+standalone-miner = {workspace = true}
 pearl-gemm-build-utils = {workspace = true}
 pearl-gemm = {workspace = true}
 # use torch compiled against nvidia runtime
@@ -62,6 +63,7 @@ members = [
   "miner/pearl-gateway",
   "py-pearl-mining",
   "miner/vllm-miner",
+  "miner/standalone-miner",
   "miner/pearl-gemm-build-utils",
   "miner/pearl-gemm"
 ]

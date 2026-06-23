@@ -7,8 +7,8 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // BenchmarkIsCoinBase performs a simple benchmark against the IsCoinBase

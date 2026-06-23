@@ -7,7 +7,7 @@
 
 package rpchelp
 
-import "github.com/pearl-research-labs/pearl/node/btcjson"
+import "github.com/modelos/modelos/node/btcjson"
 
 // Common return types.
 var (
@@ -52,6 +52,8 @@ var Methods = []struct {
 	{"lockunspent", returnsBool},
 	{"sendfrom", returnsString},
 	{"sendmany", returnsString},
+	{"sendinferencetx", returnsString},
+	{"sendinferenceproof", returnsString},
 	{"sendtoaddress", returnsString},
 	{"settxfee", returnsBool},
 	{"signmessage", returnsString},

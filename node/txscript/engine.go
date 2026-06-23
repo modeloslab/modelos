@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // ScriptFlags is a bitmask defining additional operations or tests that will be

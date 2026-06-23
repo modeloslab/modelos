@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/node/chaincfg"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 )
 
 // TestCreateWatchingOnly checks that we can construct a watching-only

@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // importCmd defines the configuration options for the insecureimport command.

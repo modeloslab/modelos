@@ -5,8 +5,8 @@ package musig2
 import (
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/schnorr"
 )
 
 var (

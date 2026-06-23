@@ -11,8 +11,8 @@ import (
 	"math"
 	"sync"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // calcHashPrevOuts calculates a single hash of all the previous outputs

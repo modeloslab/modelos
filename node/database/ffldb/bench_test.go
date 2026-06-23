@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/database"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/database"
 )
 
 // BenchmarkBlockHeader benchmarks how long it takes to load the mainnet genesis

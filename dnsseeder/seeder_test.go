@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 func TestGetNonStdIP(t *testing.T) {

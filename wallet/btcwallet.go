@@ -14,12 +14,12 @@ import (
 	"runtime"
 	"sync"
 
-	neutrino "github.com/pearl-research-labs/pearl/spv"
-	"github.com/pearl-research-labs/pearl/wallet/chain"
-	"github.com/pearl-research-labs/pearl/wallet/rpc/legacyrpc"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
+	neutrino "github.com/modelos/modelos/spv"
+	"github.com/modelos/modelos/wallet/chain"
+	"github.com/modelos/modelos/wallet/rpc/legacyrpc"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet"
+	"github.com/modelos/modelos/wallet/walletdb"
 )
 
 var (

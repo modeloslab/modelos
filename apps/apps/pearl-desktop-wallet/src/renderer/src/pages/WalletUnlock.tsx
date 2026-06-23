@@ -6,7 +6,7 @@ import { getErrorMessage } from '../lib/utils';
 import { NetworkSelector } from '../components/NetworkSelector';
 import { SettingsButton } from '../components/SettingsButton';
 import { UpgradeCta } from '../components/UpgradeCta';
-import { Button } from '@pearl/ui';
+import { Button } from '@modelos/ui';
 
 export default function WalletUnlock() {
   const navigate = useNavigate();

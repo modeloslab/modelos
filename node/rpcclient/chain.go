@@ -10,9 +10,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // FutureGetBestBlockHashResult is a future promise to deliver the result of a

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // Address wraps a wire.NetAddress with bookkeeping metadata.

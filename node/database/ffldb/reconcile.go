@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"hash/crc32"
 
-	"github.com/pearl-research-labs/pearl/node/database"
+	"github.com/modelos/modelos/node/database"
 )
 
 // The serialized write cursor location format is:

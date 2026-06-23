@@ -3,20 +3,20 @@ package wallet
 import (
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/btcutil/psbt"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/chain"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txauthor"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/btcutil/psbt"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/chain"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet/txauthor"
+	"github.com/modelos/modelos/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 )
 
 // Interface defines the public API for a wallet.
@@ -241,6 +241,23 @@ type Interface interface {
 		outputs []*wire.TxOut, minconf int32, satPerKb btcutil.Amount,
 		strategy CoinSelectionStrategy, dryRun bool,
 		optFuncs ...TxCreateOption) (*txauthor.AuthoredTx, error)
+
+	// SendInferenceTx builds, signs, and broadcasts a version-3 inference_tx.
+	SendInferenceTx(
+		promptHash [32]byte,
+		resultAddress string,
+		feeGrains int64,
+		maxTokens uint16,
+		modelVersion wire.ModelVersion,
+	) (*wire.MsgTx, error)
+
+	// SendInferenceProof builds, signs, and broadcasts a version-4
+	// inference_proof_tx, spending the locked fee output of an inference_tx.
+	SendInferenceProof(
+		inferenceTxHash chainhash.Hash,
+		proofScript []byte,
+		workerScript []byte,
+	) (*wire.MsgTx, error)
 
 	// SendOutputs funds, signs, and broadcasts a Pearl transaction
 	// paying out to the specified outputs.

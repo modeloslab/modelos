@@ -3,9 +3,9 @@ package waddrmgr
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
-	"github.com/pearl-research-labs/pearl/node/txscript"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/txscript"
 	"github.com/stretchr/testify/require"
 )
 

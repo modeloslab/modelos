@@ -7,14 +7,14 @@ package indexers
 import (
 	"errors"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs/builder"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/btcutil/gcs/builder"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/wire"
 )
 
 const (

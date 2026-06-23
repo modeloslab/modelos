@@ -7,7 +7,7 @@ package base58_test
 import (
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/base58"
+	"github.com/modelos/modelos/node/btcutil/base58"
 )
 
 // This example demonstrates how to decode modified base58 encoded data.

@@ -1,4 +1,4 @@
-import { formatPearlAmount } from '../../lib/crypto';
+import { formatMDLAmount } from '../../lib/crypto';
 import KeyValueRow from './KeyValueRow';
 
 type WalletInfoProps = {
@@ -12,7 +12,7 @@ export default function WalletInfo({ walletName, balance }: WalletInfoProps) {
       <div className="space-y-1">
         <KeyValueRow label="From Wallet:" rightContent={walletName} />
 
-        <KeyValueRow label="Balance:" rightContent={`${formatPearlAmount(balance ?? 0)} PRL`} />
+        <KeyValueRow label="Balance:" rightContent={`${formatMDLAmount(balance ?? 0)} MDL`} />
       </div>
     </div>
   );

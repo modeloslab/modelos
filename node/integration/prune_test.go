@@ -11,8 +11,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/integration/rpctest"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/integration/rpctest"
 	"github.com/stretchr/testify/require"
 )
 

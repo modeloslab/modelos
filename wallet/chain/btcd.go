@@ -11,16 +11,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs/builder"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/btcutil/gcs/builder"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/rpcclient"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 )
 
 // RPCClient represents a persistent client connection to a pearld RPC server

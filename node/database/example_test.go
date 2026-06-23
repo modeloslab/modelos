@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/database"
-	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/database"
+	_ "github.com/modelos/modelos/node/database/ffldb"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // This example demonstrates creating a new database.
@@ -22,8 +22,8 @@ func ExampleCreate() {
 	// This example assumes the ffldb driver is imported.
 	//
 	// import (
-	// 	"github.com/pearl-research-labs/pearl/node/database"
-	// 	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
+	// 	"github.com/modelos/modelos/node/database"
+	// 	_ "github.com/modelos/modelos/node/database/ffldb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.
@@ -48,8 +48,8 @@ func Example_basicUsage() {
 	// This example assumes the ffldb driver is imported.
 	//
 	// import (
-	// 	"github.com/pearl-research-labs/pearl/node/database"
-	// 	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
+	// 	"github.com/modelos/modelos/node/database"
+	// 	_ "github.com/modelos/modelos/node/database/ffldb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.
@@ -114,8 +114,8 @@ func Example_blockStorageAndRetrieval() {
 	// This example assumes the ffldb driver is imported.
 	//
 	// import (
-	// 	"github.com/pearl-research-labs/pearl/node/database"
-	// 	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
+	// 	"github.com/modelos/modelos/node/database"
+	// 	_ "github.com/modelos/modelos/node/database/ffldb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.

@@ -12,14 +12,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/mempool"
-	peerpkg "github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/mempool"
+	peerpkg "github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/wire"
 )
 
 const (

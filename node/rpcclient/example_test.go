@@ -7,7 +7,7 @@ package rpcclient
 import (
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 var connCfg = &ConnConfig{

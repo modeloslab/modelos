@@ -11,8 +11,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // TestErrNotInMainChain ensures the functions related to errNotInMainChain work

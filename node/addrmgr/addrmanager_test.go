@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/addrmgr"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/addrmgr"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // naTest is used to describe a test to be performed against the NetAddressKey

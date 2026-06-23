@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/wallet/snacl"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/wallet/snacl"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/walletdb"
 )
 
 // defaultDBTimeout specifies the timeout value when opening the wallet

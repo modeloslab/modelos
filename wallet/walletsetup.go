@@ -17,12 +17,12 @@ import (
 
 	bip39 "github.com/tyler-smith/go-bip39"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/wallet/internal/prompt"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/wallet/internal/prompt"
+	"github.com/modelos/modelos/wallet/wallet"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 )
 
 // networkDir returns the directory name of a network directory to hold wallet

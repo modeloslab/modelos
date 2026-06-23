@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/database"
-	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/database"
+	_ "github.com/modelos/modelos/node/database/ffldb"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,7 +44,7 @@ func TestTxFeeHeap(t *testing.T) {
 	prng := rand.New(rand.NewSource(randSeed))
 	for i := 0; i < 1000; i++ {
 		testItems = append(testItems, &txPrioItem{
-			feePerKB: int64(prng.Float64() * btcutil.GrainPerPearl),
+			feePerKB: int64(prng.Float64() * btcutil.GrainPerMDL),
 		})
 	}
 
@@ -116,6 +116,6 @@ func TestNewBlockTemplateNilAddress(t *testing.T) {
 	require.NotEmpty(t, template.Block.Transactions)
 
 	coinbaseTx := btcutil.NewTx(template.Block.Transactions[0])
-	require.NoError(t, blockchain.CheckTransactionSanity(coinbaseTx),
+	require.NoError(t, blockchain.CheckTransactionSanity(coinbaseTx, false),
 		"placeholder coinbase must pass Taproot-only consensus validation")
 }

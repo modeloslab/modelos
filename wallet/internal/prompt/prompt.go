@@ -17,7 +17,7 @@ import (
 
 	bip39 "github.com/tyler-smith/go-bip39"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
 	"golang.org/x/term"
 )
 

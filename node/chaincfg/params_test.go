@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 	"github.com/stretchr/testify/require"
 )
 

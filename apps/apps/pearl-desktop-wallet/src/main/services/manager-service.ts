@@ -30,7 +30,7 @@ interface WalletData {
   name: string;
 }
 
-const baseWalletDir = path.join(os.homedir(), '.pearl-wallet', 'wallet-data');
+const baseWalletDir = path.join(os.homedir(), '.modelos-wallet', 'wallet-data');
 
 function getBaseConfig() {
   const networkConfig = getCurrentNetworkConfig();

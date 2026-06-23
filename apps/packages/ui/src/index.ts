@@ -50,7 +50,7 @@ export * from './components/tabs';
 export * from './components/textarea';
 export * from './components/toast';
 // Note: toaster.tsx exports Toaster component which conflicts with sonner
-// If you need the toast UI, use: import { Toaster } from '@pearl/ui/components/toaster'
+// If you need the toast UI, use: import { Toaster } from '@modelos/ui/components/toaster'
 export * from './components/toggle';
 export * from './components/toggle-group';
 export * from './components/tooltip';

@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/wallet/walletdb"
 )
 
 const (

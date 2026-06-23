@@ -132,7 +132,7 @@ export default function SendTransaction() {
       return 'Please enter a valid amount';
     }
     if (parseFloat(val) > (spendableAmount ?? 0)) {
-      return `Insufficient spendable balance. Available after fees: ${spendableAmount ?? 'Unknown'} PRL`;
+      return `Insufficient spendable balance. Available after fees: ${spendableAmount ?? 'Unknown'} MDL`;
     }
     return undefined;
   }
@@ -143,14 +143,14 @@ export default function SendTransaction() {
     }
     const { isValid } = await validateAddress(val);
     if (!isValid) {
-      return 'Invalid Pearl address format';
+      return 'Invalid modelOS address format';
     }
     return undefined;
   }
 
   return (
     <div className="flex h-full w-full flex-col bg-transparent">
-      <SendHeader title="Send Pearl" onBack={() => navigate('/wallet')} />
+      <SendHeader title="Send MDL" onBack={() => navigate('/wallet')} />
 
       <div className="flex-1 overflow-y-auto px-8 py-12">
         <div className="flex justify-center">

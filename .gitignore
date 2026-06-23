@@ -1,4 +1,31 @@
 
+# Generated MDL wallet keypairs — secrets, never commit
+modeloswallets.json
+
+# modelOS — kept OUT of this (node/chain) repo
+/deploy/
+/docs/
+/miner/
+apps/compute/
+/scripts/
+.claude/
+/docker-compose.production.yml
+/docker-compose.yml
+/Makefile
+/ROADMAP.md
+/modelOS_Spec_v0.1.docx
+/.envrc
+/billing_test.py
+/.env.example
+/text_generation/
+/.dockerignore
+
+# macOS noise
+.DS_Store
+
+# This inventory manifest — temp, never push
+/CHANGES_SINCE_FORK.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -191,3 +218,47 @@ miner/pearl-gemm/csrc/gemm/instantiations/
 miner/pearl-gemm/csrc/gemm/static_switch_matmul.h
 miner/pearl-gemm/csrc/gemm/static_switch_noisingA.h
 miner/pearl-gemm/csrc/gemm/static_switch_noisingB.h
+
+# ── Production deployment — NEVER commit secrets ──────────────────────────────
+# .env.example is safe to commit; .env contains real passwords/keys
+.env.production
+.env.local
+.env.*.local
+# Service-account keys / Vertex SA JSON — server-only, never commit or sync.
+secrets/
+
+# Miner build outputs and distribution archives
+dist/modelos-*-linux-*.tar.gz
+dist/modelos-*-docker.tar.gz
+dist/SHA256SUMS-*.txt
+
+# PostgreSQL backup dumps (can be large and contain sensitive data)
+deploy/backups/
+deploy/postgres-backup/backups/
+
+# TLS certificates (managed by certbot/Let's Encrypt, not committed)
+deploy/nginx/ssl/
+deploy/nginx/certs/
+certbot_certs/
+
+# Pool frontend build outputs
+miner/modelos-pool/frontend/.next/
+miner/modelos-pool/frontend/node_modules/
+miner/modelos-pool/frontend/out/
+
+# Desktop wallet build outputs (binaries, installers)
+apps/apps/pearl-desktop-wallet/dist/
+apps/apps/pearl-desktop-wallet/out/
+apps/apps/pearl-desktop-wallet/resources/bin/
+
+# Node chain data (never commit — gigabytes of blockchain)
+simnet_data/
+mainnet_data/
+testnet_data/
+
+# Docker named volume mounts (if accidentally bind-mounted)
+postgres_data/
+modelos_node_data/
+pearl_node_data/
+modelos_wallet_data/
+explorer_data/

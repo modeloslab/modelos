@@ -1,3 +1,8 @@
+# Self-contained workspace boundary: this crate is consumed as a path dependency,
+# and without this table cargo searches upward and trips on an unrelated stray
+# manifest above the repo. Matches the boundary our pre-v2-sync tree had.
+[workspace]
+
 [package]
 name = "pearl-blake3"
 version = "0.1.0"

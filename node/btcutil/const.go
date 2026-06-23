@@ -5,12 +5,19 @@
 package btcutil
 
 const (
-	// GrainPerPearlCent is the number of grains in one pearl cent.
-	GrainPerPearlCent = 1e6
+	// GrainPerMDLCent is the number of grains in one MDL cent.
+	GrainPerMDLCent = 1e6
 
-	// GrainPerPearl is the number of grains in one pearl (1 PRL).
-	GrainPerPearl = 1e8
+	// GrainPerMDL is the number of grains in one MDL token.
+	// 1 MDL = 100,000,000 grains (same denomination as Bitcoin satoshis).
+	GrainPerMDL = 1e8
 
 	// MaxGrain is the maximum transaction amount allowed in grains.
-	MaxGrain = 21e9 * GrainPerPearl
+	// Set to 10× total supply as a consensus safety cap.
+	MaxGrain = 21e7 * GrainPerMDL
+
+	// MinInferenceFeeGrains is the minimum inference_tx fee (0.01 MDL).
+	// Miners should prioritise inference_tx with higher fees for faster
+	// inclusion and quicker result delivery to the requesting user.
+	MinInferenceFeeGrains = int64(1_000_000) // 0.01 MDL
 )

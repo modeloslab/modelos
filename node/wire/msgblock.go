@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // defaultTransactionAlloc is the default size used for the backing array
@@ -45,6 +45,7 @@ type TxLoc struct {
 // response to a getdata message (MsgGetData) for a given block hash.
 type MsgBlock struct {
 	MsgHeader    MsgHeader
+	AuxPow       *AuxPowData // non-nil only when Version & 0x1101 == 0x1101 (IsAuxPowBlock)
 	Transactions []*MsgTx
 }
 
@@ -62,11 +63,18 @@ func (msg *MsgBlock) Copy() *MsgBlock {
 		MsgHeader:    msg.MsgHeader,
 		Transactions: make([]*MsgTx, len(msg.Transactions)),
 	}
-
+	if msg.AuxPow != nil {
+		auxCopy := *msg.AuxPow
+		// Deep-copy the variable-length fields.
+		auxCopy.PearlCoinbaseTx = make([]byte, len(msg.AuxPow.PearlCoinbaseTx))
+		copy(auxCopy.PearlCoinbaseTx, msg.AuxPow.PearlCoinbaseTx)
+		auxCopy.CoinbaseBranch = make([]AuxPowMerkleNode, len(msg.AuxPow.CoinbaseBranch))
+		copy(auxCopy.CoinbaseBranch, msg.AuxPow.CoinbaseBranch)
+		block.AuxPow = &auxCopy
+	}
 	for i, tx := range msg.Transactions {
 		block.Transactions[i] = tx.Copy()
 	}
-
 	return block
 }
 
@@ -93,6 +101,15 @@ func (msg *MsgBlock) PrlDecode(r io.Reader, pver uint32, enc MessageEncoding) er
 	err := msg.MsgHeader.PrlDecode(r, pver, buf)
 	if err != nil {
 		return err
+	}
+
+	// AuxPoW blocks carry AuxPowData immediately after the block header,
+	// before the transaction list.
+	if IsAuxPowBlock(&msg.MsgHeader.BlockHeader) {
+		msg.AuxPow = &AuxPowData{}
+		if err := msg.AuxPow.Deserialise(r); err != nil {
+			return messageError("MsgBlock.PrlDecode", "auxpow: "+err.Error())
+		}
 	}
 
 	txCount, err := ReadVarIntBuf(r, pver, buf)
@@ -171,6 +188,14 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 		return nil, err
 	}
 
+	// AuxPoW data follows the header in AuxPoW blocks.
+	if IsAuxPowBlock(&msg.MsgHeader.BlockHeader) {
+		msg.AuxPow = &AuxPowData{}
+		if err := msg.AuxPow.Deserialise(r); err != nil {
+			return nil, messageError("MsgBlock.DeserializeTxLoc", "auxpow: "+err.Error())
+		}
+	}
+
 	txCount, err := ReadVarIntBuf(r, 0, buf)
 	if err != nil {
 		return nil, err
@@ -217,6 +242,17 @@ func (msg *MsgBlock) PrlEncode(w io.Writer, pver uint32, enc MessageEncoding) er
 	err := msg.MsgHeader.PrlEncode(w, pver, buf)
 	if err != nil {
 		return err
+	}
+
+	// Write AuxPowData immediately after the block header for AuxPoW blocks.
+	if IsAuxPowBlock(&msg.MsgHeader.BlockHeader) {
+		if msg.AuxPow == nil {
+			return messageError("MsgBlock.PrlEncode",
+				"auxpow: AuxPoW block missing AuxPowData")
+		}
+		if err := msg.AuxPow.Serialise(w); err != nil {
+			return err
+		}
 	}
 
 	err = WriteVarIntBuf(w, pver, uint64(len(msg.Transactions)), buf)
@@ -266,14 +302,15 @@ func (msg *MsgBlock) SerializeNoWitness(w io.Writer) error {
 // SerializeSize returns the number of bytes it would take to serialize the
 // block, factoring in any witness data within transaction.
 func (msg *MsgBlock) SerializeSize() int {
-	// MsgHeader (block header + certificate) + Serialized varint size for the number of
-	// transactions.
+	// MsgHeader (block header + certificate) + optional AuxPowData +
+	// varint tx count + transactions.
 	n := msg.MsgHeader.SerializeSize() + VarIntSerializeSize(uint64(len(msg.Transactions)))
-
+	if msg.AuxPow != nil {
+		n += msg.AuxPow.SerialiseSize()
+	}
 	for _, tx := range msg.Transactions {
 		n += tx.SerializeSize()
 	}
-
 	return n
 }
 

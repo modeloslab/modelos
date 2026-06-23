@@ -25,8 +25,8 @@
 //	        "fmt"
 //	        "log"
 //
-//	        "github.com/pearl-research-labs/pearl/node/btcutil"
-//	        "github.com/pearl-research-labs/pearl/node/chaincfg"
+//	        "github.com/modelos/modelos/node/btcutil"
+//	        "github.com/modelos/modelos/node/chaincfg"
 //	)
 //
 //	var testnet = flag.Bool("testnet", false, "operate on the testnet Pearl network")

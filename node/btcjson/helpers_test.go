@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // TestHelpers tests the various helper functions which create pointers to

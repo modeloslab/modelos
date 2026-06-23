@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // FilterType is used to represent a filter type.

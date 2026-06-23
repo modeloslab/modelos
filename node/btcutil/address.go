@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/bech32"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
+	"github.com/modelos/modelos/node/btcutil/bech32"
+	"github.com/modelos/modelos/node/chaincfg"
 )
 
 // encodeSegWitAddress creates a bech32m encoded address string from a

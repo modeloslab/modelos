@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // addrIndexBucket provides a mock address index database bucket by implementing

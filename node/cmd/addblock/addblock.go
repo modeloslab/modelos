@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 
 	"github.com/btcsuite/btclog"
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/blockchain/indexers"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/limits"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/blockchain/indexers"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/limits"
 )
 
 const (

@@ -17,7 +17,7 @@ import (
 const MaxUserAgentLen = 256
 
 // DefaultUserAgent for wire in the stack
-const DefaultUserAgent = "/pearlwire:0.5.0/"
+const DefaultUserAgent = "/modeloswire:0.5.0/"
 
 // MsgVersion implements the Message interface and represents a version
 // message.  It is used for a peer to advertise itself as soon as an outbound

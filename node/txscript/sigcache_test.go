@@ -8,9 +8,9 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/ecdsa"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/ecdsa"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // genRandomSig returns a random message, a signature of the message under the

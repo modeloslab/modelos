@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
+	"github.com/modelos/modelos/node/btcec"
 )
 
 // setHex decodes the passed big-endian hex string into the internal field value

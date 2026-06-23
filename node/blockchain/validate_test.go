@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/node/zkpow"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/node/zkpow"
 )
 
 // TestSequenceLocksActive tests the SequenceLockActive function to ensure it
@@ -321,7 +321,7 @@ func TestCheckTransactionSanityOutputScriptTypes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := CheckTransactionSanity(mkTx(test.pkScript))
+			err := CheckTransactionSanity(mkTx(test.pkScript), false)
 			if test.wantErr && err == nil {
 				t.Fatalf("expected error, got nil")
 			}

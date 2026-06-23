@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // TestBtcWalletExtCmds tests all of the Oyster extended commands marshal and

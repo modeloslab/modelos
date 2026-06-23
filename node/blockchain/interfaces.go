@@ -1,8 +1,8 @@
 package blockchain
 
 import (
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // ChainCtx is an interface that abstracts away blockchain parameters.

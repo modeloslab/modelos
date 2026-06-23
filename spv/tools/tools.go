@@ -10,6 +10,6 @@ package neutrino
 import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/ory/go-acc"
-	_ "github.com/pearl-research-labs/pearl/node"
+	_ "github.com/modelos/modelos/node"
 	_ "github.com/rinchsan/gosimports/cmd/gosimports"
 )

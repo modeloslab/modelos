@@ -14,9 +14,9 @@ import (
 	"bytes"
 	"crypto/sha256"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // Updater encapsulates the role 'Updater' as specified in BIP174; it accepts

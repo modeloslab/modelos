@@ -6,9 +6,9 @@
 package wallet
 
 import (
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 )
 
 type unstableAPI struct {

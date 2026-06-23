@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // TestPearldExtCmds tests all of the pearld extended commands marshal and unmarshal

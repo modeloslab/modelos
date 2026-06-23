@@ -8,8 +8,8 @@ package txscript
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // TestBadPC sets the pc to a deliberately bad result then confirms that Step

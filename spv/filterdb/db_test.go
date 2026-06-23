@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs/builder"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/btcutil/gcs/builder"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 	"github.com/stretchr/testify/require"
 )
 

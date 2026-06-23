@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // TestHelpReflectInternals ensures the various help functions which deal with

@@ -1,11 +1,11 @@
-# Controlling and querying pearld via prlctl
+# Controlling and querying modelosd via prlctl
 
-prlctl is a command line utility that can be used to both control and query pearld
-via [RPC](http://www.wikipedia.org/wiki/Remote_procedure_call).  pearld does
+prlctl is a command line utility that can be used to both control and query modelosd
+via [RPC](http://www.wikipedia.org/wiki/Remote_procedure_call).  modelosd does
 **not** enable its RPC server by default;  You must configure at minimum both an
 RPC username and password or both an RPC limited username and password:
 
-* pearld.conf configuration file
+* modelos.conf configuration file
 
 ```bash
 [Application Options]

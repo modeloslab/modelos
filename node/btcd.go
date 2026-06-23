@@ -16,10 +16,10 @@ import (
 	"runtime/pprof"
 	"runtime/trace"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain/indexers"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/limits"
-	"github.com/pearl-research-labs/pearl/node/ossec"
+	"github.com/modelos/modelos/node/blockchain/indexers"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/limits"
+	"github.com/modelos/modelos/node/ossec"
 )
 
 const (
@@ -37,12 +37,12 @@ var (
 // as a service and reacts accordingly.
 var winServiceMain func() (bool, error)
 
-// pearldMain is the real main function for pearld.  It is necessary to work around
+// modelosMain is the real main function for pearld.  It is necessary to work around
 // the fact that deferred functions do not run when os.Exit() is called.  The
 // optional serverChan parameter is mainly used by the service code to be
 // notified with the server once it is setup so it can gracefully stop it when
 // requested from the service control manager.
-func pearldMain(serverChan chan<- *server) error {
+func modelosMain(serverChan chan<- *server) error {
 	// Load configuration and parse command line.  This function also
 	// initializes logging and configures it accordingly.
 	tcfg, _, err := loadConfig()
@@ -459,7 +459,7 @@ func main() {
 	}
 
 	// Work around defer not working after os.Exit()
-	if err := pearldMain(nil); err != nil {
+	if err := modelosMain(nil); err != nil {
 		os.Exit(1)
 	}
 }

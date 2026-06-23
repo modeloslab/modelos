@@ -16,15 +16,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/blockchain/internal/testhelper"
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/mining"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/blockchain/internal/testhelper"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/mining"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 func newHashFromStr(hexStr string) *chainhash.Hash {

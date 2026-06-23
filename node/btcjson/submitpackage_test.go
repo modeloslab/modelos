@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 	"github.com/stretchr/testify/require"
 )
 

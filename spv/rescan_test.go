@@ -10,15 +10,15 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs/builder"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/blockntfns"
-	"github.com/pearl-research-labs/pearl/spv/headerfs"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/btcutil/gcs/builder"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/rpcclient"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/blockntfns"
+	"github.com/modelos/modelos/spv/headerfs"
 )
 
 // mockChainSource is a mock implementation of the ChainSource interface that

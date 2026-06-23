@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/wallet/walletdb/walletdbtest"
+	"github.com/modelos/modelos/wallet/walletdb/walletdbtest"
 )
 
 // TestInterface performs all interfaces tests for this database driver.

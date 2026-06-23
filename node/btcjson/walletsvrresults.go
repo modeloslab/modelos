@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/txscript"
+	"github.com/modelos/modelos/node/txscript"
 )
 
 // CreateWalletResult models the result of the createwallet command.

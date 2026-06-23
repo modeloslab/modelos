@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/btcsuite/btclog"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/rpcclient"
 )
 
 type logWriter struct{}

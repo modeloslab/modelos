@@ -5,7 +5,7 @@
 package ffldb
 
 import (
-	"github.com/pearl-research-labs/pearl/node/database"
+	"github.com/modelos/modelos/node/database"
 )
 
 // TstRunWithMaxBlockFileSize runs the passed function with the maximum allowed

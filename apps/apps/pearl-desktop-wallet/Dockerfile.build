@@ -1,0 +1,150 @@
+# Multi-stage wallet build — produces platform-native Electron packages.
+# Supported targets (via --platform):
+#   linux/amd64   → .deb (x64)
+#   linux/arm64   → .deb (arm64)
+#
+# Windows cross-build from Linux is also handled (electron-builder + wine).
+# macOS must be built on a native macOS machine (Apple won't allow macOS containers).
+#
+# Usage from repo root:
+#   # Create buildx builder first (one-time):
+#   docker buildx create --name multiarch --driver docker-container --bootstrap
+#   docker buildx use multiarch
+#
+#   # Linux amd64 .deb
+#   docker buildx build --platform linux/amd64 \
+#       -f apps/apps/pearl-desktop-wallet/Dockerfile.build \
+#       --output type=local,dest=./wallet-dist/linux-amd64 .
+#
+#   # Linux arm64 .deb
+#   docker buildx build --platform linux/arm64 \
+#       -f apps/apps/pearl-desktop-wallet/Dockerfile.build \
+#       --output type=local,dest=./wallet-dist/linux-arm64 .
+#
+#   # Windows .exe (cross-compiled from linux/amd64)
+#   docker buildx build --platform linux/amd64 \
+#       --build-arg TARGET_OS=windows \
+#       -f apps/apps/pearl-desktop-wallet/Dockerfile.build \
+#       --output type=local,dest=./wallet-dist/windows .
+
+ARG GO_VERSION=1.26
+ARG NODE_VERSION=22
+ARG TARGET_OS=linux
+
+# ── Stage 1: Build Rust + Go dependencies ────────────────────────────────────
+FROM golang:${GO_VERSION}-bookworm AS go-builder
+
+ARG TARGET_OS
+# Allow Go to auto-download the exact toolchain version required by go.mod
+ENV GOTOOLCHAIN=auto
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git make gcc g++ clang \
+    libssl-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add MinGW for Windows cross-compile
+RUN if [ "$TARGET_OS" = "windows" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends \
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --default-toolchain stable --profile minimal
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Add Windows Rust target if needed
+RUN if [ "$TARGET_OS" = "windows" ]; then \
+        rustup target add x86_64-pc-windows-gnu; \
+    fi
+
+# Install go-task
+RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+COPY Taskfile.yml ./
+COPY zk-pow/ ./zk-pow/
+COPY plonky2/ ./plonky2/
+COPY xmss/ ./xmss/
+COPY pearl-blake3/ ./pearl-blake3/
+COPY wallet/ ./wallet/
+COPY node/ ./node/
+COPY spv/ ./spv/
+COPY version/ ./version/
+
+# ZK circuit cache is always needed (embeds into the Rust lib at compile time)
+RUN task build:zk-cache
+
+RUN if [ "$TARGET_OS" = "windows" ]; then \
+        # Cross-compile Rust FFI for Windows GNU target (subshell keeps CWD at /app)
+        (cd /app/zk-pow/bindings/go && \
+            CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-gcc \
+            cargo build --release --target x86_64-pc-windows-gnu) && \
+        # Cross-compile XMSS static lib for Windows (PE/COFF, not ELF)
+        make -C /app/xmss CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ && \
+        # Go cross-compile for Windows (runs from /app)
+        mkdir -p bin && \
+        GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
+        CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ \
+        go build -tags xmss,zkpow \
+        -o bin/modelos-wallet-windows-x64.exe ./wallet; \
+    else \
+        task build:zk-gobind; \
+        task build:libxmss; \
+        task build:oyster; \
+        ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/'); \
+        cp bin/oyster bin/modelos-wallet-linux-${ARCH}; \
+    fi
+
+# ── Stage 2: Build Electron app ───────────────────────────────────────────────
+FROM node:${NODE_VERSION}-bookworm AS electron-builder
+
+ARG TARGET_OS
+
+# Wine for Windows NSIS installer cross-build
+RUN if [ "$TARGET_OS" = "windows" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends wine wine64 && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
+
+RUN npm install -g pnpm@8.15.6
+
+WORKDIR /app
+
+# Copy the full apps/ workspace — needed because the wallet depends on
+# @modelos/ui@workspace:* and other packages in apps/packages/
+COPY apps/ ./apps/
+
+# Drop the built Go binary into the wallet's bin/ directory
+COPY --from=go-builder /app/bin/ ./apps/apps/pearl-desktop-wallet/bin/
+
+# Install all workspace deps from the pnpm workspace root.
+# HUSKY=0 prevents the postinstall hook from failing (no .git in Docker).
+WORKDIR /app/apps
+RUN HUSKY=0 pnpm install --no-frozen-lockfile
+
+# Build Electron package from the wallet directory
+WORKDIR /app/apps/apps/pearl-desktop-wallet
+RUN if [ "$TARGET_OS" = "windows" ]; then \
+        # NSIS requires Wine to run the uninstaller stub (needs DISPLAY/Xvfb).
+        # Use zip target for Docker cross-compilation; build NSIS on native Windows.
+        pnpm run build && CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --win zip --x64; \
+    else \
+        ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/'); \
+        pnpm run build && npx electron-builder --linux --${ARCH}; \
+    fi
+
+# ── Stage 3: Collect artifacts into a clean layer ────────────────────────────
+FROM electron-builder AS artifact-collector
+RUN mkdir -p /out && \
+    find /app/apps/apps/pearl-desktop-wallet/dist -maxdepth 1 \
+        \( -name "*.deb" -o -name "*.exe" -o -name "*.dmg" -o -name "*.zip" \) \
+        -exec cp {} /out/ \;
+
+# ── Stage 4: Export artifacts (empty base so only built files are exported) ───
+FROM scratch AS artifacts
+COPY --from=artifact-collector /out/ /

@@ -14,10 +14,10 @@ import (
 	"strings"
 
 	flags "github.com/jessevdk/go-flags"
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/wallet/netparams"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/wallet/netparams"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	pearldHomeDir         = btcutil.AppDataDir("pearld", false)
+	pearldHomeDir         = btcutil.AppDataDir("modelosd", false)
 	prlctlHomeDir         = btcutil.AppDataDir("prlctl", false)
 	oysterHomeDir         = btcutil.AppDataDir("oyster", false)
 	defaultConfigFile     = filepath.Join(prlctlHomeDir, "prlctl.conf")
@@ -241,7 +241,7 @@ func loadConfig() (*config, []string, error) {
 		if preCfg.Wallet {
 			serverConfigPath = filepath.Join(oysterHomeDir, "oyster.conf")
 		} else {
-			serverConfigPath = filepath.Join(pearldHomeDir, "pearld.conf")
+			serverConfigPath = filepath.Join(pearldHomeDir, "modelos.conf")
 		}
 
 		err := createDefaultConfigFile(preCfg.ConfigFile, serverConfigPath)

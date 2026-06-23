@@ -5,8 +5,8 @@
 package blockchain
 
 import (
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/node/zkpow"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/node/zkpow"
 )
 
 // SolveBlock mines a ZKCertificate for the given block header.

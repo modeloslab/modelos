@@ -12,20 +12,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs/builder"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/btcutil/gcs/builder"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 
-	"github.com/pearl-research-labs/pearl/spv/banman"
-	"github.com/pearl-research-labs/pearl/spv/blockntfns"
-	"github.com/pearl-research-labs/pearl/spv/chainsync"
-	"github.com/pearl-research-labs/pearl/spv/headerfs"
-	"github.com/pearl-research-labs/pearl/spv/headerlist"
-	"github.com/pearl-research-labs/pearl/spv/query"
+	"github.com/modelos/modelos/spv/banman"
+	"github.com/modelos/modelos/spv/blockntfns"
+	"github.com/modelos/modelos/spv/chainsync"
+	"github.com/modelos/modelos/spv/headerfs"
+	"github.com/modelos/modelos/spv/headerlist"
+	"github.com/modelos/modelos/spv/query"
 )
 
 const (

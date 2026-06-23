@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txauthor"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet/txauthor"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -81,7 +81,7 @@ func TestTxToOutputsDryRun(t *testing.T) {
 	// database us not inflated.
 	dryRunTx, err := w.txToOutputs(
 		txOuts, nil, nil, 0, 1, 1000, CoinSelectionLargest, true,
-		nil, alwaysAllowUtxo,
+		nil, alwaysAllowUtxo, 0,
 	)
 	if err != nil {
 		t.Fatalf("unable to author tx: %v", err)
@@ -99,7 +99,7 @@ func TestTxToOutputsDryRun(t *testing.T) {
 
 	dryRunTx2, err := w.txToOutputs(
 		txOuts, nil, nil, 0, 1, 1000, CoinSelectionLargest, true,
-		nil, alwaysAllowUtxo,
+		nil, alwaysAllowUtxo, 0,
 	)
 	if err != nil {
 		t.Fatalf("unable to author tx: %v", err)
@@ -135,7 +135,7 @@ func TestTxToOutputsDryRun(t *testing.T) {
 	// to the database.
 	tx, err := w.txToOutputs(
 		txOuts, nil, nil, 0, 1, 1000, CoinSelectionLargest, false,
-		nil, alwaysAllowUtxo,
+		nil, alwaysAllowUtxo, 0,
 	)
 	if err != nil {
 		t.Fatalf("unable to author tx: %v", err)
@@ -328,7 +328,7 @@ func TestTxToOutputsRandom(t *testing.T) {
 	createTx := func() *txauthor.AuthoredTx {
 		tx, err := w.txToOutputs(
 			txOuts, nil, nil, 0, 1, feeSatPerKb,
-			CoinSelectionRandom, true, nil, alwaysAllowUtxo,
+			CoinSelectionRandom, true, nil, alwaysAllowUtxo, 0,
 		)
 		require.NoError(t, err)
 		return tx
@@ -400,7 +400,7 @@ func TestCreateSimpleCustomChange(t *testing.T) {
 	}
 	tx1, err := w.txToOutputs(
 		[]*wire.TxOut{targetTxOut}, nil, nil, 0, 1, 1000,
-		CoinSelectionLargest, true, nil, alwaysAllowUtxo,
+		CoinSelectionLargest, true, nil, alwaysAllowUtxo, 0,
 	)
 	require.NoError(t, err)
 
@@ -426,7 +426,7 @@ func TestCreateSimpleCustomChange(t *testing.T) {
 	tx2, err := w.txToOutputs(
 		[]*wire.TxOut{targetTxOut}, &waddrmgr.KeyScopeBIP0086,
 		&waddrmgr.KeyScopeBIP0086, 0, 1, 1000, CoinSelectionLargest,
-		true, nil, alwaysAllowUtxo,
+		true, nil, alwaysAllowUtxo, 0,
 	)
 	require.NoError(t, err)
 
@@ -563,7 +563,7 @@ func TestSelectUtxosTxoToOutpoint(t *testing.T) {
 			tx1, err := w.txToOutputs(
 				[]*wire.TxOut{targetTxOut}, nil, nil, 0, 1,
 				1000, CoinSelectionLargest, true,
-				tc.selectUTXOs, alwaysAllowUtxo,
+				tc.selectUTXOs, alwaysAllowUtxo, 0,
 			)
 			if tc.errString != "" {
 				require.ErrorContains(t, err, tc.errString)

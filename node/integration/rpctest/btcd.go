@@ -18,22 +18,22 @@ var (
 	compileMtx sync.Mutex
 
 	// executablePath is the path to the compiled executable. This is the empty
-	// string until pearld is compiled. This should not be accessed directly;
-	// instead use the function pearldExecutablePath().
+	// string until modelosd is compiled. This should not be accessed directly;
+	// instead use the function modelosExecutablePath().
 	executablePath string
 )
 
-// pearldExecutablePath returns a path to the pearld executable to be used by
+// modelosExecutablePath returns a path to the modelosd executable to be used by
 // rpctests. To ensure the code tests against the most up-to-date version of
-// pearld, this method compiles pearld the first time it is called. After that, the
-// generated binary is used for subsequent test harnesses. The executable file
-// is not cleaned up, but since it lives at a static path in a temp directory,
-// it is not a big deal.
-func pearldExecutablePath() (string, error) {
+// modelosd, this method compiles modelosd the first time it is called. After that,
+// the generated binary is used for subsequent test harnesses. The executable
+// file is not cleaned up, but since it lives at a static path in a temp
+// directory, it is not a big deal.
+func modelosExecutablePath() (string, error) {
 	compileMtx.Lock()
 	defer compileMtx.Unlock()
 
-	// If pearld has already been compiled, just use that.
+	// If modelosd has already been compiled, just use that.
 	if len(executablePath) != 0 {
 		return executablePath, nil
 	}
@@ -43,17 +43,17 @@ func pearldExecutablePath() (string, error) {
 		return "", err
 	}
 
-	// Build pearld and output an executable in a static temp path.
-	outputPath := filepath.Join(testDir, "pearld")
+	// Build modelosd and output an executable in a static temp path.
+	outputPath := filepath.Join(testDir, "modelosd")
 	if runtime.GOOS == "windows" {
 		outputPath += ".exe"
 	}
 	cmd := exec.Command(
-		"go", "build", "-o", outputPath, "github.com/pearl-research-labs/pearl/node",
+		"go", "build", "-o", outputPath, "github.com/modelos/modelos/node",
 	)
 	err = cmd.Run()
 	if err != nil {
-		return "", fmt.Errorf("Failed to build pearld: %v", err)
+		return "", fmt.Errorf("Failed to build modelosd: %v", err)
 	}
 
 	// Save executable path so future calls do not recompile.

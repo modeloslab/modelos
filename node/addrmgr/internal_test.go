@@ -7,7 +7,7 @@ package addrmgr
 import (
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 func TstKnownAddressIsBad(ka *KnownAddress) bool {

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/spv/banman"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/spv/banman"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 	"github.com/stretchr/testify/require"
 )
 

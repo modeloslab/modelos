@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/wallet/rpc/legacyrpc"
-	"github.com/pearl-research-labs/pearl/wallet/rpc/rpcserver"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/wallet/rpc/legacyrpc"
+	"github.com/modelos/modelos/wallet/rpc/rpcserver"
+	"github.com/modelos/modelos/wallet/wallet"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

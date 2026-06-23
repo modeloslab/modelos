@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // OutOfRangeError describes an error due to accessing an element that is out
@@ -158,6 +158,15 @@ func (b *Block) Transactions() []*Tx {
 	offset := b.msgBlock.MsgHeader.SerializeSize() + wire.VarIntSerializeSize(
 		uint64(len(b.msgBlock.Transactions)),
 	)
+	// AuxPoW blocks carry AuxPowData between the header and the transaction
+	// list (see MsgBlock.PrlDecode), so the first transaction's raw bytes begin
+	// after it. Without this the cached raw-byte slice — and therefore
+	// Tx.Hash() and the computed merkle root — would be taken from inside
+	// AuxPowData, causing valid AuxPoW blocks to be rejected with a bogus
+	// "block merkle root is invalid".
+	if b.msgBlock.AuxPow != nil {
+		offset += b.msgBlock.AuxPow.SerialiseSize()
+	}
 
 	// Generate and cache the wrapped transactions for all that haven't
 	// already been done.

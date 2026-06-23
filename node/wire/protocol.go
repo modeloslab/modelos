@@ -131,24 +131,24 @@ type PearlNet uint32
 // this package does not provide that functionality since it's generally a
 // better idea to simply disconnect clients that are misbehaving over TCP.
 const (
-	// MainNet represents the main network.
-	MainNet PearlNet = 0x50524C4D // "PRLM" in ASCII
+	// MainNet represents the main modelOS network.
+	MainNet PearlNet = 0x4D444C4D // "MDLM" in ASCII
 
 	// RegTest represents the regression test network.
-	RegTest PearlNet = 0x50524C52 // "PRLR" in ASCII
+	RegTest PearlNet = 0x4D444C52 // "MDLR" in ASCII
 
-	// TestNet represents the Pearl test network.
-	TestNet PearlNet = 0x50524C31 // "PRL1" in ASCII
+	// TestNet represents the modelOS test network.
+	TestNet PearlNet = 0x4D444C31 // "MDL1" in ASCII
 
-	// TestNet2 represents the Pearl test network v2 (fresh genesis).
-	TestNet2 PearlNet = 0x50524C32 // "PRL2" in ASCII
+	// TestNet2 represents the modelOS test network v2 (fresh genesis).
+	TestNet2 PearlNet = 0x4D444C32 // "MDL2" in ASCII
 
 	// SigNet represents the public default SigNet. For custom signets,
 	// see CustomSignetParams. Derived from SHA256d of the default challenge script.
 	SigNet PearlNet = 0x40CF030A
 
 	// SimNet represents the simulation test network.
-	SimNet PearlNet = 0x50524C53 // "PRLS" in ASCII
+	SimNet PearlNet = 0x4D444C53 // "MDLS" in ASCII
 )
 
 // netStrings is a map of networks back to their constant names for

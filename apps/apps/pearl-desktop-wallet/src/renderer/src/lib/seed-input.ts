@@ -1,6 +1,6 @@
 import { wordlists } from 'bip39';
 
-// Word counts accepted by BIP39 (entropy 128..256 bits in 32-bit steps). The Pearl node
+// Word counts accepted by BIP39 (entropy 128..256 bits in 32-bit steps). The modelOS node
 // accepts any of these via `github.com/tyler-smith/go-bip39`, so we mirror that here to
 // catch mistakes (e.g. pasted 11 or 23 words) before we hand the seed to the node.
 export const VALID_MNEMONIC_WORD_COUNTS = [12, 15, 18, 21, 24] as const;

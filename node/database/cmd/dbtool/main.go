@@ -11,7 +11,7 @@ import (
 
 	"github.com/btcsuite/btclog"
 	flags "github.com/jessevdk/go-flags"
-	"github.com/pearl-research-labs/pearl/node/database"
+	"github.com/modelos/modelos/node/database"
 )
 
 const (

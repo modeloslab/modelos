@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
+	"github.com/modelos/modelos/wallet/wallet"
 )
 
 // Harness holds the BranchRecoveryState being tested, the recovery window being

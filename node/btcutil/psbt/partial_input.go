@@ -6,8 +6,8 @@ import (
 	"io"
 	"sort"
 
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // PInput is a struct encapsulating all the data that can be attached to any

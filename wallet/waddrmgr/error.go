@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
 )
 
 var (

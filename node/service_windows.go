@@ -16,13 +16,13 @@ import (
 )
 
 const (
-	// svcName is the name of the pearld service.
-	svcName = "pearldsvc"
+	// svcName is the name of the modelosd service.
+	svcName = "modelossvc"
 
 	// svcDisplayName is the service name that will be shown in the windows
 	// services list.  Not the svcName is the "real" name which is used
 	// to control the service.  This is only for display purposes.
-	svcDisplayName = "Pearl Node Service"
+	svcDisplayName = "modelOS Node Service"
 
 	// svcDesc is the description of the service.
 	svcDesc = "Downloads and stays synchronized with the Pearl blockchain " +
@@ -44,27 +44,27 @@ func logServiceStartOfDay(srvr *server) {
 	elog.Info(1, message)
 }
 
-// pearldService houses the main service handler which handles all service
-// updates and launching pearldMain.
-type pearldService struct{}
+// modelosService houses the main service handler which handles all service
+// updates and launching modelosMain.
+type modelosService struct{}
 
 // Execute is the main entry point the winsvc package calls when receiving
 // information from the Windows service control manager.  It launches the
-// long-running pearldMain (which is the real meat of pearld), handles service
+// long-running modelosMain (which is the real meat of pearld), handles service
 // change requests, and notifies the service control manager of changes.
-func (s *pearldService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (bool, uint32) {
+func (s *modelosService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (bool, uint32) {
 	// Service start is pending.
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 
-	// Start pearldMain in a separate goroutine so the service can start
+	// Start modelosMain in a separate goroutine so the service can start
 	// quickly.  Shutdown (along with a potential error) is reported via
 	// doneChan.  serverChan is notified with the main server instance once
 	// it is started so it can be gracefully stopped.
 	doneChan := make(chan error)
 	serverChan := make(chan *server)
 	go func() {
-		err := pearldMain(serverChan)
+		err := modelosMain(serverChan)
 		doneChan <- err
 	}()
 
@@ -307,7 +307,7 @@ func serviceMain() (bool, error) {
 	}
 	defer elog.Close()
 
-	err = svc.Run(svcName, &pearldService{})
+	err = svc.Run(svcName, &modelosService{})
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("Service start failed: %v", err))
 		return true, err

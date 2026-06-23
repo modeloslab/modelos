@@ -7,6 +7,8 @@ package wallet
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -16,22 +18,22 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/chain"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txauthor"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txrules"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb/migration"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/chain"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet/txauthor"
+	"github.com/modelos/modelos/wallet/wallet/txrules"
+	"github.com/modelos/modelos/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/walletdb/migration"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 )
 
 const (
@@ -1212,6 +1214,7 @@ type (
 		resp                  chan createTxResponse
 		selectUtxos           []wire.OutPoint
 		allowUtxo             func(wtxmgr.Credit) bool
+		txVersion             int32 // if non-zero, overrides the default wire.TxVersion
 	}
 	createTxResponse struct {
 		tx  *txauthor.AuthoredTx
@@ -1254,6 +1257,7 @@ out:
 				txr.changeKeyScope, txr.account, txr.minconf,
 				txr.feeSatPerKB, txr.coinSelectionStrategy,
 				txr.dryRun, txr.selectUtxos, txr.allowUtxo,
+				txr.txVersion,
 			)
 
 			release()
@@ -1272,6 +1276,7 @@ type txCreateOptions struct {
 	changeKeyScope *waddrmgr.KeyScope
 	selectUtxos    []wire.OutPoint
 	allowUtxo      func(wtxmgr.Credit) bool
+	txVersion      int32 // if non-zero, overrides the default wire.TxVersion
 }
 
 // TxCreateOption is a set of optional arguments to modify the tx creation
@@ -1308,6 +1313,15 @@ func WithCustomSelectUtxos(utxos []wire.OutPoint) TxCreateOption {
 func WithUtxoFilter(allowUtxo func(utxo wtxmgr.Credit) bool) TxCreateOption {
 	return func(opts *txCreateOptions) {
 		opts.allowUtxo = allowUtxo
+	}
+}
+
+// WithTxVersion overrides the transaction version used when building the
+// transaction. Use this to produce special transaction types such as
+// wire.TxVersionInference (3) or wire.TxVersionInferenceProof (4).
+func WithTxVersion(v int32) TxCreateOption {
+	return func(opts *txCreateOptions) {
+		opts.txVersion = v
 	}
 }
 
@@ -1356,6 +1370,7 @@ func (w *Wallet) CreateSimpleTx(coinSelectKeyScope *waddrmgr.KeyScope,
 		resp:                  make(chan createTxResponse),
 		selectUtxos:           opts.selectUtxos,
 		allowUtxo:             opts.allowUtxo,
+		txVersion:             opts.txVersion,
 	}
 	w.createTxRequests <- req
 	resp := <-req.resp
@@ -3550,6 +3565,201 @@ func (w *Wallet) sendOutputs(outputs []*wire.TxOut, keyScope *waddrmgr.KeyScope,
 		return nil, errors.New("tx hash mismatch")
 	}
 
+	return createdTx.Tx, nil
+}
+
+// SendInferenceTx builds, signs, and broadcasts a version-3 inference_tx.
+//
+// The fee output (TxOut[0]) is a P2TR output to a fresh wallet change address,
+// locked at feeGrains. The OP_RETURN output encodes the serialised
+// InferencePayload (109 bytes) so that mining nodes can locate the prompt,
+// compute the result, and submit an InferenceProof transaction to claim the fee.
+//
+// Returns the broadcast transaction on success.
+func (w *Wallet) SendInferenceTx(
+	promptHash [32]byte,
+	resultAddress string,
+	feeGrains int64,
+	maxTokens uint16,
+	modelVersion wire.ModelVersion,
+) (*wire.MsgTx, error) {
+	// Generate a random 64-bit nonce for replay protection.
+	var nonceBuf [8]byte
+	if _, err := rand.Read(nonceBuf[:]); err != nil {
+		return nil, fmt.Errorf("sendinferencetx: nonce generation: %w", err)
+	}
+	nonce := binary.LittleEndian.Uint64(nonceBuf[:])
+
+	// Build and serialise the InferencePayload (109 bytes).
+	payload := &wire.InferencePayload{
+		PromptHash:   promptHash,
+		MaxTokens:    maxTokens,
+		ModelVersion: modelVersion,
+		Nonce:        nonce,
+	}
+	copy(payload.ResultAddress[:], []byte(resultAddress))
+
+	var payloadBuf bytes.Buffer
+	if err := payload.Serialise(&payloadBuf); err != nil {
+		return nil, fmt.Errorf("sendinferencetx: payload serialise: %w", err)
+	}
+
+	// Build the OP_RETURN output that carries the InferencePayload.
+	// NullData outputs are exempt from dust and standardness checks.
+	opReturnScript, err := txscript.NewScriptBuilder().
+		AddOp(txscript.OP_RETURN).
+		AddData(payloadBuf.Bytes()).
+		Script()
+	if err != nil {
+		return nil, fmt.Errorf("sendinferencetx: opreturn script: %w", err)
+	}
+	opReturnOut := wire.NewTxOut(0, opReturnScript)
+
+	// Build the fee output using a fresh wallet change address (P2TR).
+	// This output holds the inference fee until the worker claims it by
+	// submitting a valid InferenceProof transaction (version 4).
+	changeAddr, err := w.NewChangeAddress(
+		waddrmgr.DefaultAccountNum, waddrmgr.KeyScopeBIP0086, false,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("sendinferencetx: change address: %w", err)
+	}
+	feeScript, err := txscript.PayToAddrScript(changeAddr)
+	if err != nil {
+		return nil, fmt.Errorf("sendinferencetx: fee script: %w", err)
+	}
+	feeOut := wire.NewTxOut(feeGrains, feeScript)
+
+	keyScope := waddrmgr.KeyScopeBIP0086
+	createdTx, err := w.CreateSimpleTx(
+		&keyScope, waddrmgr.DefaultAccountNum,
+		[]*wire.TxOut{feeOut, opReturnOut},
+		0, txrules.DefaultRelayFeePerKb,
+		CoinSelectionLargest, false,
+		WithTxVersion(wire.TxVersionInference),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if w.Manager.WatchOnly() {
+		return createdTx.Tx, ErrTxUnsigned
+	}
+	txHash, err := w.reliablyPublishTransaction(createdTx.Tx, "inference_tx")
+	if err != nil {
+		return nil, err
+	}
+	if *txHash != createdTx.Tx.TxHash() {
+		return nil, errors.New("sendinferencetx: tx hash mismatch")
+	}
+	return createdTx.Tx, nil
+}
+
+// fetchInferenceUTXO returns the wallet credit for the fee-pot output (index 0)
+// of an inference_tx.  Returns an error if the output is not in the wallet's
+// unspent set — which means either the tx is unknown to this wallet or the
+// output has already been spent by a proof tx.
+func (w *Wallet) fetchInferenceUTXO(txHash chainhash.Hash) (btcutil.Amount, error) {
+	target := wire.OutPoint{Hash: txHash, Index: 0}
+	var amount btcutil.Amount
+	var found bool
+
+	err := walletdb.View(w.db, func(dbtx walletdb.ReadTx) error {
+		ns := dbtx.ReadBucket(wtxmgrNamespaceKey)
+		credits, err := w.TxStore.UnspentOutputs(ns)
+		if err != nil {
+			return err
+		}
+		for _, c := range credits {
+			if c.OutPoint == target {
+				amount = c.Amount
+				found = true
+				return nil
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, fmt.Errorf("sendinferenceproof: utxo lookup: %w", err)
+	}
+	if !found {
+		return 0, fmt.Errorf("sendinferenceproof: inference_tx fee output "+
+			"(%s:0) not found in wallet UTXO set — tx unknown or already spent",
+			txHash)
+	}
+	return amount, nil
+}
+
+// SendInferenceProof builds, signs, and broadcasts a version-4 inference_proof_tx.
+//
+// It spends the wallet-owned fee-pot output (TxOut[0]) of the given inference_tx
+// and pays the locked grains to workerScript, after deducting the proof tx fee.
+// The proofScript is the pre-built 197-byte OP_RETURN carrying the signed
+// InferenceResultProof; the wallet does not validate the Schnorr proof — that
+// is the responsibility of the network nodes.
+//
+// Returns the broadcast transaction on success.
+func (w *Wallet) SendInferenceProof(
+	inferenceTxHash chainhash.Hash,
+	proofScript []byte,
+	workerScript []byte,
+) (*wire.MsgTx, error) {
+	// Fetch the locked inference fee from the wallet's UTXO set.
+	feeAmount, err := w.fetchInferenceUTXO(inferenceTxHash)
+	if err != nil {
+		return nil, err
+	}
+
+	// Estimate the proof tx fee.  The structure is fixed:
+	//   1 P2TR input (~58 vbytes including witness discount)
+	//   1 OP_RETURN output (8 + 1 + 197 = 206 bytes)
+	//   1 P2TR worker output (8 + 1 + 34 = 43 bytes)
+	//   tx overhead ~11 bytes, segwit marker ~0.5 vbytes
+	// ≈ 320 vbytes at DefaultRelayFeePerKb → ~320 grains.
+	// Add a 4× safety margin so we never produce a negative worker value.
+	const estimatedProofTxVBytes = 1280
+	proofTxFee := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, estimatedProofTxVBytes)
+
+	workerValue := int64(feeAmount) - int64(proofTxFee)
+	if workerValue <= 0 {
+		return nil, fmt.Errorf("sendinferenceproof: inference fee %d grains "+
+			"too small to cover proof tx fee %d grains",
+			feeAmount, proofTxFee)
+	}
+
+	// Build outputs.
+	// proofScript is an OP_RETURN, so value=0 and it is exempt from dust checks.
+	opReturnOut := wire.NewTxOut(0, proofScript)
+	// Worker P2TR output — receives the inference fee minus proof tx fee.
+	workerOut := wire.NewTxOut(workerValue, workerScript)
+
+	inferenceOutPoint := wire.OutPoint{Hash: inferenceTxHash, Index: 0}
+	keyScope := waddrmgr.KeyScopeBIP0086
+
+	// Use CreateSimpleTx constrained to the single inference fee UTXO.
+	// Any small remainder between our fee estimate and the actual computed
+	// fee either becomes a tiny change output (returned to wallet) or is
+	// absorbed as additional miner fee if it is below the dust threshold.
+	createdTx, err := w.CreateSimpleTx(
+		&keyScope, waddrmgr.DefaultAccountNum,
+		[]*wire.TxOut{opReturnOut, workerOut},
+		0, txrules.DefaultRelayFeePerKb,
+		CoinSelectionLargest, false,
+		WithCustomSelectUtxos([]wire.OutPoint{inferenceOutPoint}),
+		WithTxVersion(wire.TxVersionInferenceProof),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if w.Manager.WatchOnly() {
+		return createdTx.Tx, ErrTxUnsigned
+	}
+	txHash, err := w.reliablyPublishTransaction(createdTx.Tx, "inference_proof_tx")
+	if err != nil {
+		return nil, err
+	}
+	if *txHash != createdTx.Tx.TxHash() {
+		return nil, errors.New("sendinferenceproof: tx hash mismatch")
+	}
 	return createdTx.Tx, nil
 }
 

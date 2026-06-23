@@ -7,8 +7,8 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/database"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/database"
 )
 
 // maybeAcceptBlock potentially accepts a block into the block chain and, if

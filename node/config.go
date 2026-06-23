@@ -24,24 +24,24 @@ import (
 
 	"github.com/btcsuite/go-socks/socks"
 	flags "github.com/jessevdk/go-flags"
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/connmgr"
-	"github.com/pearl-research-labs/pearl/node/database"
-	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
-	"github.com/pearl-research-labs/pearl/node/mempool"
-	"github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/connmgr"
+	"github.com/modelos/modelos/node/database"
+	_ "github.com/modelos/modelos/node/database/ffldb"
+	"github.com/modelos/modelos/node/mempool"
+	"github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/wire"
 )
 
 const (
-	defaultConfigFilename           = "pearld.conf"
+	defaultConfigFilename           = "modelos.conf"
 	defaultDataDirname              = "data"
 	defaultLogLevel                 = "info"
 	defaultLogDirname               = "logs"
-	defaultLogFilename              = "pearld.log"
+	defaultLogFilename              = "modelos.log"
 	defaultMaxPeers                 = 125
 	defaultBanDuration              = time.Hour * 24
 	defaultBanThreshold             = 100
@@ -62,14 +62,14 @@ const (
 	defaultSigCacheMaxSize          = 100000
 	defaultUtxoCacheMaxSizeMiB      = 250
 	defaultDbCacheFlushIntervalSecs = 3600
-	sampleConfigFilename            = "sample-pearld.conf"
+	sampleConfigFilename            = "sample-modelos.conf"
 	defaultTxIndex                  = false
 	defaultAddrIndex                = false
 	pruneMinSize                    = 1536
 )
 
 var (
-	defaultHomeDir     = btcutil.AppDataDir("pearld", false)
+	defaultHomeDir     = btcutil.AppDataDir("modelosd", false)
 	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
 	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
 	knownDbTypes       = database.SupportedDrivers()
@@ -118,6 +118,7 @@ type config struct {
 	DropTxIndex              bool          `long:"droptxindex" description:"Deletes the hash-based transaction index from the database on start up and then exits."`
 	ExternalIPs              []string      `long:"externalip" description:"Add an ip to the list of local addresses we claim to listen on to peers"`
 	Generate                 bool          `long:"generate" description:"Generate (mine) blocks using the CPU"`
+	MiningNoIBDCheck         bool          `long:"miningnoibdcheck" description:"Serve getblocktemplate even when the chain tip is stale (skip the IBD / 24h-tip-age gate). For private/solo chains where THIS node is the sole block producer and would otherwise deadlock (can't mine the block that refreshes its own tip)."`
 	FreeTxRelayLimit         float64       `long:"limitfreerelay" description:"Limit relay of transactions with no transaction fee to the given amount in thousands of bytes per minute"`
 	Listeners                []string      `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 44108, testnet: 44110)"`
 	LogDir                   string        `long:"logdir" description:"Directory to log output."`
@@ -1204,12 +1205,12 @@ func createDefaultConfigFile(destinationPath string) error {
 	return nil
 }
 
-// pearldDial connects to the address on the named network using the appropriate
+// modelosDial connects to the address on the named network using the appropriate
 // dial function depending on the address and configuration options.  For
 // example, .onion addresses will be dialed using the onion specific proxy if
 // one was specified, but will otherwise use the normal dial function (which
 // could itself use a proxy or not).
-func pearldDial(addr net.Addr) (net.Conn, error) {
+func modelosDial(addr net.Addr) (net.Conn, error) {
 	if strings.Contains(addr.String(), ".onion:") {
 		return cfg.oniondial(addr.Network(), addr.String(),
 			defaultConnectTimeout)
@@ -1217,14 +1218,14 @@ func pearldDial(addr net.Addr) (net.Conn, error) {
 	return cfg.dial(addr.Network(), addr.String(), defaultConnectTimeout)
 }
 
-// pearldLookup resolves the IP of the given host using the correct DNS lookup
+// modelosLookup resolves the IP of the given host using the correct DNS lookup
 // function depending on the configuration options.  For example, addresses will
 // be resolved using tor when the --proxy flag was specified unless --noonion
 // was also specified in which case the normal system DNS resolver will be used.
 //
 // Any attempt to resolve a tor address (.onion) will return an error since they
 // are not intended to be resolved outside of the tor proxy.
-func pearldLookup(host string) ([]net.IP, error) {
+func modelosLookup(host string) ([]net.IP, error) {
 	if strings.HasSuffix(host, ".onion") {
 		return nil, fmt.Errorf("attempt to resolve tor address %s", host)
 	}

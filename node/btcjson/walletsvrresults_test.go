@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/pearl-research-labs/pearl/node/txscript"
+	"github.com/modelos/modelos/node/txscript"
 )
 
 // TestGetAddressInfoResult ensures that custom unmarshalling of

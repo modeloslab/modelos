@@ -20,7 +20,7 @@ export function MajorUpgradeBanner() {
         <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
         <div className="min-w-0">
           <p className="text-sm font-semibold">
-            A major Pearl Wallet update is available{versionLabel}
+            A major modelOS Wallet update is available{versionLabel}
           </p>
           <p className="truncate text-xs text-red-800">
             This release may change wallet functionality. You are strongly urged to upgrade to

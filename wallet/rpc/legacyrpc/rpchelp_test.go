@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/wallet/internal/rpchelp"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/wallet/internal/rpchelp"
 )
 
 func serverMethods() map[string]struct{} {

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/wire"
 )
 
 type crawlError struct {

@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1485,7 +1485,7 @@ func TestAncestorsDescendants(t *testing.T) {
 func TestRBF(t *testing.T) {
 	t.Parallel()
 
-	const defaultFee = btcutil.GrainPerPearl
+	const defaultFee = btcutil.GrainPerMDL
 
 	testCases := []struct {
 		name  string

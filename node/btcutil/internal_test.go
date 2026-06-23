@@ -12,7 +12,7 @@ interface. The functions are only exported while the tests are being run.
 package btcutil
 
 import (
-	"github.com/pearl-research-labs/pearl/node/btcutil/bech32"
+	"github.com/modelos/modelos/node/btcutil/bech32"
 )
 
 // SetBlockBytes sets the internal serialized block byte buffer to the passed

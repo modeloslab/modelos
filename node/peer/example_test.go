@@ -10,9 +10,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // mockRemotePeer creates a basic inbound peer listening on the simnet port for

@@ -5,8 +5,8 @@
 package blockchain
 
 import (
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/txscript"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/txscript"
 )
 
 // -----------------------------------------------------------------------------

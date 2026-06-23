@@ -8,9 +8,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/ecdsa"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/ecdsa"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // This example demonstrates signing a message with a secp256k1 private key that

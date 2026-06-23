@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // ================================================================================
@@ -75,6 +75,10 @@ func verifyZKCertificateInner(header *wire.BlockHeader, c *wire.ZKCertificate, n
 	cBlockHeader := blockHeaderToC(header)
 
 	var cZKProof C.CZKProof
+	// v2 CZKProof carries a variable-length public_data buffer (PUBLICDATA_MAX_SIZE,
+	// sized for MoE proofs) plus an explicit public_data_len. Base (non-MoE) proofs —
+	// which is what modelOS mines — use PublicDataSize (164), matching wire.ZKCertificate.
+	cZKProof.public_data_len = C.uintptr_t(wire.PublicDataSize)
 	C.memcpy(unsafe.Pointer(&cZKProof.public_data[0]), unsafe.Pointer(&c.PublicData[0]), C.size_t(wire.PublicDataSize))
 
 	// Pin the ProofData memory to prevent GC from moving it during the C call
@@ -90,9 +94,9 @@ func verifyZKCertificateInner(header *wire.BlockHeader, c *wire.ZKCertificate, n
 	var errorBuf [C.ERROR_MSG_MAX_SIZE]C.char
 	var result C.int32_t
 	if nbitsOverride != nil {
-		result = C.verify_zk_proof_with_nbits(&cBlockHeader, &cZKProof, C.uint32_t(*nbitsOverride), &errorBuf[0])
+		result = C.verify_zk_proof_v2_with_nbits(&cBlockHeader, &cZKProof, C.uint32_t(*nbitsOverride), &errorBuf[0])
 	} else {
-		result = C.verify_zk_proof(&cBlockHeader, &cZKProof, &errorBuf[0])
+		result = C.verify_zk_proof_v2(&cBlockHeader, &cZKProof, &errorBuf[0])
 	}
 	msg := C.GoString(&errorBuf[0])
 

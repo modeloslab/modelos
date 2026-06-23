@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/headerfs"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/headerfs"
 )
 
 const (

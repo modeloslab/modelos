@@ -13,11 +13,11 @@ import (
 	"testing/quick"
 
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/chaincfg"
 	"github.com/stretchr/testify/require"
 )
 

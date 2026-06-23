@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/rpcclient"
 )
 
 // NameShowCmd defines the name_show JSON-RPC command.

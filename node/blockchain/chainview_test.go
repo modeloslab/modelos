@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // testNoncePrng provides a deterministic prng for the nonce in generated fake

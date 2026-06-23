@@ -1,8 +1,8 @@
 package crawler
 
 import (
-	"github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/wire"
 )
 
 func (s *Seeder) onVerAck(p *peer.Peer, msg *wire.MsgVerAck) {

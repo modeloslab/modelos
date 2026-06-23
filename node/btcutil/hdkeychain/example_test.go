@@ -7,11 +7,11 @@ package hdkeychain_test
 import (
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/txscript"
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/txscript"
 )
 
 func TaprootAddress(key *hdkeychain.ExtendedKey, net *chaincfg.Params) (*btcutil.AddressTaproot, error) {

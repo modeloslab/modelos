@@ -7,7 +7,7 @@ package zero_test
 import (
 	"testing"
 
-	. "github.com/pearl-research-labs/pearl/wallet/internal/zero"
+	. "github.com/modelos/modelos/wallet/internal/zero"
 )
 
 var (

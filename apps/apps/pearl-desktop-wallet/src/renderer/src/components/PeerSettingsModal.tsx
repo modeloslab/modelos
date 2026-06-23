@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, RotateCcw, Save } from 'lucide-react';
-import { Button } from '@pearl/ui/components/button';
+import { Button } from '@modelos/ui/components/button';
 
 interface PeerSettingsModalProps {
     isOpen: boolean;

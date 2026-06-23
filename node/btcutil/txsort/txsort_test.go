@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/txsort"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil/txsort"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // TestSort ensures the transaction sorting works according to the BIP.

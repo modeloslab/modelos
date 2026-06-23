@@ -1,5 +1,5 @@
 import type { Config } from 'tailwindcss';
-import pearlDesign from '@pearl/ui/tailwind';
+import pearlDesign from '@modelos/ui/tailwind';
 
 // all in fixtures is set to tailwind v3 as interims solutions
 
@@ -9,7 +9,10 @@ const config: Config = {
   presets: [pearlDesign],
   theme: {
     extend: {
-      // Additional pearl-desktop-wallet specific extensions can go here
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-fraunces)', 'Georgia', 'serif'],
+      },
       keyframes: {
         'accordion-down': {
           from: {

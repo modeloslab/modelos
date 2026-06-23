@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 var (

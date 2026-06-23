@@ -7,8 +7,8 @@ package main
 import (
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/database"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/database"
 )
 
 // headersCmd defines the configuration options for the loadheaders command.

@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/crypto/hkdf"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/ellswift"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/ellswift"
 )
 
 // packetBit is a type used to represent the bits in the packet's header.

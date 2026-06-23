@@ -5,7 +5,7 @@
 package main
 
 import (
-	pearlversion "github.com/pearl-research-labs/pearl/version"
+	pearlversion "github.com/modelos/modelos/version"
 )
 
 // version returns the application version as a properly formed string per the

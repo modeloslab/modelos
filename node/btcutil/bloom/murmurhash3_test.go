@@ -7,7 +7,7 @@ package bloom_test
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/bloom"
+	"github.com/modelos/modelos/node/btcutil/bloom"
 )
 
 // TestMurmurHash3 ensure the MurmurHash3 function produces the correct hash

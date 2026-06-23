@@ -8,8 +8,8 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // TxIndexUnknown is the value returned for a transaction index that is unknown.

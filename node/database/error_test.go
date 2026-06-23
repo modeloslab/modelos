@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/database"
+	"github.com/modelos/modelos/node/database"
 )
 
 // TestErrorCodeStringer tests the stringized output for the ErrorCode type.

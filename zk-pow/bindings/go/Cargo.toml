@@ -1,3 +1,5 @@
+[workspace]
+
 [package]
 name = "zk-pow-go"
 version = "0.1.0"
@@ -6,10 +8,16 @@ description = "Go FFI bindings for ZK-POW"
 
 [lib]
 name = "zk_pow_ffi"
-crate-type = ["staticlib"]
+# staticlib: the Go node links it statically (cgo). cdylib: the modelOS standalone-miner v2 (C#/.NET)
+# P/Invokes libzk_pow_ffi.so for the block-proving step (prove_plain_proof). Both come from one build;
+# plonky2 proving is CPU-only, so the .so is a single arch-independent artifact across all GPUs.
+crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 blake3 = "1.5"
+bincode = "1.3.3"
+rayon = "1"
+libc = "0.2"
 zk-pow = { path = "../..", default-features = false, features = ["embedded_cache"] }
 lazy_static = "1.5"
 anyhow = "1.0"

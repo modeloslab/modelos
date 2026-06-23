@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/blockntfns"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/blockntfns"
 )
 
 // createTx is a helper method to create random transactions that spend

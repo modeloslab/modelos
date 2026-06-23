@@ -5,7 +5,7 @@ function formatTxid(txid: string) {
   return `${txid.slice(0, 8)}...${txid.slice(-8)}`;
 }
 
-function formatPearlAmount(amount: number | string) {
+function formatMDLAmount(amount: number | string) {
   const amountStr = String(amount);
 
   const decimalIndex = amountStr.indexOf('.');
@@ -23,4 +23,4 @@ function formatPearlAmount(amount: number | string) {
   return (Math.floor(Number(amount) * 1e8) / 1e8).toFixed(8).replace(/\.?0+$/, '');
 }
 
-export { formatTxid, formatPearlAmount };
+export { formatTxid, formatMDLAmount };

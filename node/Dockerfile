@@ -47,16 +47,17 @@ FROM alpine:3.21 AS runtime
 
 RUN apk add --no-cache \
     ca-certificates \
+    curl \
     libgcc \
     libstdc++
 
-COPY --from=builder /app/bin/pearld /usr/local/bin/pearld
+COPY --from=builder /app/bin/modelosd /usr/local/bin/modelosd
 COPY --from=builder /app/bin/prlctl /usr/local/bin/prlctl
 
-VOLUME ["/root/.pearld"]
+VOLUME ["/root/.modelosd"]
 
-# 44108  Mainnet Pearl peer-to-peer port
+# 44208  Mainnet modelOS peer-to-peer port
 # 44107  Mainnet RPC port
-EXPOSE 44108 44107
+EXPOSE 44208 44107
 
-ENTRYPOINT ["pearld"]
+ENTRYPOINT ["modelosd"]

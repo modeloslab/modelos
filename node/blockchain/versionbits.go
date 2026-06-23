@@ -5,7 +5,7 @@
 package blockchain
 
 import (
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg"
 )
 
 const (

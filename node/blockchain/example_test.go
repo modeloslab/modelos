@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/database"
-	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/database"
+	_ "github.com/modelos/modelos/node/database/ffldb"
 )
 
 // This example demonstrates how to create a new chain instance and use
@@ -69,7 +69,7 @@ func ExampleBlockChain_ProcessBlock() {
 	fmt.Printf("Block accepted. Is it an orphan?: %v", isOrphan)
 
 	// Output:
-	// Failed to process block: already have block a18d3093b7ff618f0cdd073fa3d10374e2e0105fe7ef53ff48b55f41c58dadd7
+	// Failed to process block: already have block 8cf67f790abd589565d6cec0f11d16ea80d91b98304499123cc6ab7d9ac5e5f7
 }
 
 // This example demonstrates how to convert the compact "bits" in a block header

@@ -13,8 +13,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // psbtMagicLength is the length of the magic bytes used to signal the start of

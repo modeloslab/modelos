@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/database"
-	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
+	"github.com/modelos/modelos/node/database"
+	_ "github.com/modelos/modelos/node/database/ffldb"
 )
 
 var (

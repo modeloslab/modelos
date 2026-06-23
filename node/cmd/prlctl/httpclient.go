@@ -12,7 +12,7 @@ import (
 	"os"
 
 	"github.com/btcsuite/go-socks/socks"
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // newHTTPClient returns a new HTTP client that is configured according to the

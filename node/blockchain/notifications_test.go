@@ -7,7 +7,7 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg"
 )
 
 // TestNotifications ensures that notification callbacks are fired on events.

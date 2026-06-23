@@ -1,5 +1,5 @@
 import {Link, useLocation} from 'react-router-dom';
-import {Wallet, Cpu, Settings} from 'lucide-react';
+import {Wallet, Settings} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {HIDDEN_SIDEBAR_PATHS} from '@/lib/constants';
 
@@ -7,10 +7,10 @@ export default function SideNav() {
   const location = useLocation();
   const pathname = location.pathname;
 
+  // Inference moved out of the wallet into the standalone Compute web app.
   const navItems = [
-    {href: '/wallet', icon: Wallet, label: 'Wallet'},
-    {href: '/ai-marketplace', icon: Cpu, label: 'AI Marketplace'},
-    {href: '/settings', icon: Settings, label: 'Settings'},
+    {href: '/wallet',   icon: Wallet,   label: 'Wallet',   match: (p: string) => p === '/wallet'},
+    {href: '/settings', icon: Settings, label: 'Settings', match: (p: string) => p === '/settings'},
   ];
 
   if (HIDDEN_SIDEBAR_PATHS.some(path => pathname.startsWith(path))) {
@@ -26,7 +26,7 @@ export default function SideNav() {
             to={item.href}
             className={cn(
               'flex flex-col items-center gap-2 rounded-lg p-3 transition-colors duration-200 hover:bg-neutral-800',
-              pathname === item.href
+              item.match(pathname)
                 ? 'bg-neutral-800 text-emerald-400'
                 : 'text-neutral-400 hover:text-white'
             )}

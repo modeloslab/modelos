@@ -5,8 +5,8 @@
 package txsizes
 
 import (
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // Taproot-only transaction size constants.

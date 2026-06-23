@@ -36,7 +36,7 @@ export function derivePhase(p: SyncProgress): SyncPhase {
 
 export const useWalletStore = create<WalletState>()((set, get) => ({
   isSyncing: false,
-  walletName: 'Pearl Wallet',
+  walletName: 'modelOS Wallet',
   balance: undefined,
   availableBalance: undefined,
   unconfirmedBalance: undefined,

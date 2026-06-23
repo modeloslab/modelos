@@ -6,32 +6,34 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
 )
 
 // TestEmissionSchedule verifies the emission curve follows the expected formula
 func TestEmissionSchedule(t *testing.T) {
-	totalSupplyTokens := int64(2100000000) // 2 billion and 100 million tokens
+	totalSupplyTokens := int64(21000000) // 21 million tokens
 
-	// Test key block heights in the emission schedule
+	// Test key block heights in the emission schedule. Subsidy is in Pearl/block;
+	// cumulative is in billions of Pearl (so values are hundredths of a billion at
+	// the 21M total supply).
 	testCases := []struct {
 		height             int32
 		expectedPercent    float64
 		expectedSubsidy    float64
 		expectedCumulative float64
 	}{
-		{1, 0.000154, 3229.641, 0.00000323},
-		{650226, 50.0, 807.412, 1.05},
-		{1300452, 66.67, 358.850, 1.40},
-		{1950678, 75.0, 201.853, 1.575},
-		{3251130, 83.33, 89.712, 1.75},
-		{6502260, 90.91, 26.691, 1.909},
-		{32511300, 98.04, 1.242, 2.059},
+		{1, 0.000154, 32.29641, 0.0000000323},
+		{650226, 50.0, 8.07412, 0.0105},
+		{1300452, 66.67, 3.58850, 0.0140},
+		{1950678, 75.0, 2.01853, 0.01575},
+		{3251130, 83.33, 0.89712, 0.0175},
+		{6502260, 90.91, 0.26691, 0.01909},
+		{32511300, 98.04, 0.01242, 0.02059},
 	}
 
 	fmt.Println("\n=== Per-Block Emission Schedule (Absolute Amounts) ===")
-	fmt.Printf("Total Supply: %d Pearl (2 billion and 100 million)\n", totalSupplyTokens)
+	fmt.Printf("Total Supply: %d Pearl (21 million)\n", totalSupplyTokens)
 	fmt.Printf("Emission Constant: 650,226 blocks (~4 years at 3 min 14 sec/block)\n\n")
 	fmt.Printf("%-12s %-20s %-25s %-15s\n", "Height", "Subsidy (Pearl)", "Cumulative (Pearl)", "Percent")
 	fmt.Println("--------------------------------------------------------------------------------")
@@ -42,9 +44,9 @@ func TestEmissionSchedule(t *testing.T) {
 		cumulativePercent := float64(tc.height) / float64(int64(tc.height)+defaultEmissionConstant) * 100
 
 		cumulativeTokens := calculateCumulativeSupply(tc.height)
-		cumulativeTokensDisplay := float64(cumulativeTokens) / float64(btcutil.GrainPerPearl)
+		cumulativeTokensDisplay := float64(cumulativeTokens) / float64(btcutil.GrainPerMDL)
 
-		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("%-12d %-20.2f %-25s %-15.2f%%\n",
 			tc.height,
@@ -97,10 +99,10 @@ func TestEmissionDecline(t *testing.T) {
 
 	for height := int32(1); height <= 20; height++ {
 		subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 		cumulativePercent := float64(height) / float64(int64(height)+defaultEmissionConstant) * 100
 		cumulativeTokens := calculateCumulativeSupply(height)
-		cumulativePearl := float64(cumulativeTokens) / float64(btcutil.GrainPerPearl)
+		cumulativePearl := float64(cumulativeTokens) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("%-10d %-22.2f %-25s %-15.6f%%\n",
 			height,
@@ -126,10 +128,10 @@ func TestEmissionDecline(t *testing.T) {
 
 	for _, height := range milestones {
 		subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 		cumulativePercent := float64(height) / float64(int64(height)+defaultEmissionConstant) * 100
 		cumulativeTokens := calculateCumulativeSupply(height)
-		cumulativePearl := float64(cumulativeTokens) / float64(btcutil.GrainPerPearl)
+		cumulativePearl := float64(cumulativeTokens) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("%-12d %-22.2f %-27s %-15.2f%%\n",
 			height,
@@ -159,12 +161,12 @@ func Test50PercentAtEmissionConstant(t *testing.T) {
 	subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
 	cumulativeSupply := calculateCumulativeSupply(height)
 
-	totalSupplyValue := int64(2100000000) * int64(btcutil.GrainPerPearl)
+	totalSupplyValue := int64(21000000) * int64(btcutil.GrainPerMDL)
 
 	percentage := float64(cumulativeSupply) / float64(totalSupplyValue) * 100
 
-	subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
-	cumulativePearl := float64(cumulativeSupply) / float64(btcutil.GrainPerPearl)
+	subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
+	cumulativePearl := float64(cumulativeSupply) / float64(btcutil.GrainPerMDL)
 
 	fmt.Printf("\n=== At Emission Constant (Height %d) ===\n", height)
 	fmt.Printf("Block subsidy:         %.2f Pearl\n", subsidyPearl)
@@ -176,10 +178,10 @@ func Test50PercentAtEmissionConstant(t *testing.T) {
 		t.Errorf("At height %d, expected ~50%% circulating, got %.4f%%", height, percentage)
 	}
 
-	expectedCumulative := 1.05e9
+	expectedCumulative := 1.05e7 // 10.5 million Pearl (50% of 21M)
 	if cumulativePearl < expectedCumulative*0.999 || cumulativePearl > expectedCumulative*1.001 {
-		t.Errorf("At height %d, expected ~1.05 billion Pearl, got %.2f billion",
-			height, cumulativePearl/1e9)
+		t.Errorf("At height %d, expected ~10.5 million Pearl, got %.2f million",
+			height, cumulativePearl/1e6)
 	}
 }
 
@@ -215,7 +217,7 @@ func TestCumulativeSupplyFormula(t *testing.T) {
 
 		// Actual cumulative supply
 		cumulative := calculateCumulativeSupply(height)
-		totalSupplyValue := int64(2100000000) * int64(btcutil.GrainPerPearl)
+		totalSupplyValue := int64(21000000) * int64(btcutil.GrainPerMDL)
 		actualPercent := float64(cumulative) / float64(totalSupplyValue) * 100
 
 		fmt.Printf("%-15d %-20.6f%% %-20.6f%%\n", height, expectedPercent, actualPercent)
@@ -242,7 +244,7 @@ func TestGrainPrecision(t *testing.T) {
 
 	for _, height := range testHeights {
 		subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-		formatPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+		formatPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("%-15d %-25d %-20.8f\n", height, subsidy, formatPearl)
 
@@ -265,7 +267,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 	// For a rough estimate, when h is very large: h² ≈ totalSupply × emissionConstant
 	// h ≈ sqrt(totalSupply × emissionConstant)
 
-	totalSupplyValue := int64(2100000000) * int64(btcutil.GrainPerPearl)
+	totalSupplyValue := int64(21000000) * int64(btcutil.GrainPerMDL)
 	emissionConstValue := defaultEmissionConstant
 
 	// Approximate starting point (limited to int32 max)
@@ -315,7 +317,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 				continue
 			}
 			subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 
 			marker := ""
 			if subsidy > 0 && CalcBlockSubsidy(height+1, &chaincfg.MainNetParams) == 0 {
@@ -330,7 +332,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 		// Calculate what percentage this represents
 		percentage := float64(lastNonZeroHeight) / float64(int64(lastNonZeroHeight)+defaultEmissionConstant) * 100
 		cumulative := calculateCumulativeSupply(lastNonZeroHeight)
-		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerPearl)
+		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("\nLast non-zero subsidy at height: %d\n", lastNonZeroHeight)
 		fmt.Printf("Circulating supply at that point: %s (%.6f%%)\n",
@@ -338,7 +340,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 
 		// Calculate remaining supply that will never be mined
 		remainingSupply := totalSupplyValue - cumulative
-		remainingPearl := float64(remainingSupply) / float64(btcutil.GrainPerPearl)
+		remainingPearl := float64(remainingSupply) / float64(btcutil.GrainPerMDL)
 		remainingPercent := float64(remainingSupply) / float64(totalSupplyValue) * 100
 
 		fmt.Printf("Supply that will never be mined: %s (%.6f%%)\n",
@@ -371,7 +373,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 				continue
 			}
 			subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 
 			fmt.Printf("%-15d %-25d %-20.8f\n", height, subsidy, subsidyPearl)
 		}
@@ -379,7 +381,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 		// Calculate what percentage this represents
 		percentage := float64(lastNonZeroHeight) / float64(int64(lastNonZeroHeight)+defaultEmissionConstant) * 100
 		cumulative := calculateCumulativeSupply(lastNonZeroHeight)
-		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerPearl)
+		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("\nAt int32 max height: %d\n", lastNonZeroHeight)
 		fmt.Printf("Circulating supply: %s (%.6f%%)\n",

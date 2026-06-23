@@ -5,10 +5,10 @@
 package txscript
 
 import (
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // RawTxInTaprootSignature returns a valid schnorr signature required to

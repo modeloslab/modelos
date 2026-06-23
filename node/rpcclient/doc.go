@@ -9,8 +9,8 @@ Package rpcclient implements a websocket-enabled JSON-RPC client.
 
 This client provides a robust and easy to use client for interfacing with an
 RPC server that uses a pearld-compatible JSON-RPC API.  This client has been
-tested with pearld (https://github.com/pearl-research-labs/pearl) and
-Oyster (https://github.com/pearl-research-labs/pearl).
+tested with pearld (https://github.com/modelos/modelos) and
+Oyster (https://github.com/modelos/modelos).
 
 In addition to the compatible standard HTTP POST JSON-RPC API, pearld and
 Oyster provide a websocket interface that is more efficient than the standard

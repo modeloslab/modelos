@@ -14,19 +14,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/chain"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txrules"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"golang.org/x/crypto/sha3"
+
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/rpcclient"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/chain"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet"
+	"github.com/modelos/modelos/wallet/wallet/txrules"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 )
 
 const (
@@ -136,6 +138,8 @@ var rpcHandlers = map[string]struct {
 	"listalltransactions":     {handler: listAllTransactions},
 	"renameaccount":           {handler: renameAccount},
 	"walletislocked":          {handler: walletIsLocked},
+	"sendinferencetx":         {handler: sendInferenceTx},
+	"sendinferenceproof":      {handler: sendInferenceProof},
 }
 
 // unimplemented handles an unimplemented RPC request with the
@@ -1495,6 +1499,174 @@ func sendToAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 
 	// sendtoaddress always spends from the default account, this matches bitcoind
 	return sendPairs(w, pairs, waddrmgr.KeyScopeBIP0086, waddrmgr.DefaultAccountNum, 1, feeRate)
+}
+
+// sendInferenceTx handles a sendinferencetx RPC request by constructing a
+// version-3 inference_tx, signing it with wallet keys, and broadcasting it to
+// the modelOS network.  On success, the transaction hash string is returned.
+func sendInferenceTx(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
+	cmd := icmd.(*btcjson.SendInferenceTxCmd)
+
+	// Decode the 32-byte prompt hash from hex.
+	promptHashBytes, err := hex.DecodeString(cmd.PromptHash)
+	if err != nil || len(promptHashBytes) != 32 {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "promptHash must be a 64-character hex string (32 bytes)",
+		}
+	}
+	var promptHash [32]byte
+	copy(promptHash[:], promptHashBytes)
+
+	// Validate resultAddress length (wire layout allows 64 bytes).
+	if len(cmd.ResultAddress) == 0 || len(cmd.ResultAddress) > 64 {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "resultAddress must be between 1 and 64 bytes",
+		}
+	}
+
+	// Validate fee.
+	if cmd.FeeGrains < btcutil.MinInferenceFeeGrains {
+		return nil, &btcjson.RPCError{
+			Code: btcjson.ErrRPCInvalidParameter,
+			Message: fmt.Sprintf(
+				"feeGrains %d is below minimum %d (0.01 MDL)",
+				cmd.FeeGrains, btcutil.MinInferenceFeeGrains,
+			),
+		}
+	}
+
+	// Validate maxTokens against the consensus cap.
+	if cmd.MaxTokens <= 0 || cmd.MaxTokens > int64(wire.MaxInferenceTokens) {
+		return nil, &btcjson.RPCError{
+			Code: btcjson.ErrRPCInvalidParameter,
+			Message: fmt.Sprintf(
+				"maxTokens %d is out of range (1–%d)",
+				cmd.MaxTokens, wire.MaxInferenceTokens,
+			),
+		}
+	}
+
+	// Resolve optional modelVersion (default 1 = DeepSeek R1 70B).
+	modelVer := int64(1)
+	if cmd.ModelVersion != nil {
+		modelVer = *cmd.ModelVersion
+	}
+	if modelVer < 1 || modelVer > 4 {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: fmt.Sprintf("modelVersion %d is out of range (1–4)", modelVer),
+		}
+	}
+
+	tx, err := w.SendInferenceTx(
+		promptHash,
+		cmd.ResultAddress,
+		cmd.FeeGrains,
+		uint16(cmd.MaxTokens),
+		wire.ModelVersion(modelVer),
+	)
+	if err != nil {
+		if waddrmgr.IsError(err, waddrmgr.ErrLocked) {
+			return nil, &ErrWalletUnlockNeeded
+		}
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInternal.Code,
+			Message: err.Error(),
+		}
+	}
+
+	txHashStr := tx.TxHash().String()
+	log.Infof("Successfully sent inference_tx %v", txHashStr)
+	return txHashStr, nil
+}
+
+// sendInferenceProof handles a sendinferenceproof RPC request by building and
+// broadcasting a version-4 inference_proof_tx.  It spends the wallet-owned
+// fee-pot output (TxOut[0]) of the named inference_tx and pays the locked
+// grains to the worker's P2TR scriptPubKey.
+func sendInferenceProof(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
+	cmd := icmd.(*btcjson.SendInferenceProofCmd)
+
+	// Decode the inference_tx txid.
+	inferenceTxHash, err := chainhash.NewHashFromStr(cmd.InferenceTxid)
+	if err != nil {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: fmt.Sprintf("invalid inferenceTxid: %v", err),
+		}
+	}
+
+	// Decode and validate the proof OP_RETURN script.
+	// Expected: OP_RETURN (1) + OP_PUSHDATA1 (1) + 0xc2 (1) + 194 bytes = 197 bytes.
+	proofScript, err := hex.DecodeString(cmd.ProofScript)
+	if err != nil {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "proofScript must be a hex string",
+		}
+	}
+	if len(proofScript) != 197 ||
+		proofScript[0] != 0x6a || proofScript[1] != 0x4c || proofScript[2] != 0xc2 {
+		return nil, &btcjson.RPCError{
+			Code: btcjson.ErrRPCInvalidParameter,
+			Message: fmt.Sprintf("proofScript must be 197 bytes starting with "+
+				"OP_RETURN OP_PUSHDATA1 0xc2; got %d bytes", len(proofScript)),
+		}
+	}
+
+	// Decode and validate the worker's P2TR scriptPubKey.
+	// A P2TR scriptPubKey is exactly 34 bytes: OP_1 (0x51) + 0x20 + 32-byte x-only pubkey.
+	workerScript, err := hex.DecodeString(cmd.WorkerScript)
+	if err != nil {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "workerScript must be a hex string",
+		}
+	}
+	if len(workerScript) != 34 || workerScript[0] != 0x51 || workerScript[1] != 0x20 {
+		return nil, &btcjson.RPCError{
+			Code: btcjson.ErrRPCInvalidParameter,
+			Message: fmt.Sprintf("workerScript must be a 34-byte P2TR scriptPubKey "+
+				"(OP_1 OP_PUSHBYTES_32 <x-only-pubkey>); got %d bytes", len(workerScript)),
+		}
+	}
+
+	// If the miner supplied the plaintext result, verify SHA3-256(resultText)
+	// matches the ResultHash embedded in bytes [35:67] of the proof script
+	// (bytes [32:64] of the 194-byte InferenceResultProof payload).
+	// A mismatch means the miner committed to a different result on-chain than
+	// they delivered to the wallet relay — refuse payment.
+	if cmd.ResultText != nil && *cmd.ResultText != "" {
+		// ResultHash is at proof_payload[32:64] = proofScript[3+32 : 3+64]
+		onChainResultHash := proofScript[35:67]
+		h := sha3.New256()
+		h.Write([]byte(*cmd.ResultText))
+		actualHash := h.Sum(nil)
+		if !bytes.Equal(actualHash, onChainResultHash) {
+			return nil, &btcjson.RPCError{
+				Code: btcjson.ErrRPCInvalidParameter,
+				Message: "payment refused: SHA3-256(resultText) does not match " +
+					"ResultHash in proof — miner delivered different result than committed",
+			}
+		}
+	}
+
+	tx, err := w.SendInferenceProof(*inferenceTxHash, proofScript, workerScript)
+	if err != nil {
+		if waddrmgr.IsError(err, waddrmgr.ErrLocked) {
+			return nil, &ErrWalletUnlockNeeded
+		}
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInternal.Code,
+			Message: err.Error(),
+		}
+	}
+
+	txHashStr := tx.TxHash().String()
+	log.Infof("Successfully sent inference_proof_tx %v", txHashStr)
+	return txHashStr, nil
 }
 
 // setTxFee sets the transaction fee per kilobyte added to transactions.

@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // blockStatus is a bit field representing the validation state of the block.

@@ -1,7 +1,7 @@
 {
-  "name": "@pearl/ui",
+  "name": "@modelos/ui",
   "version": "1.0.0",
-  "description": "Shared design system for Pearl applications",
+  "description": "Shared design system for modelOS applications",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -28,8 +28,7 @@
   "keywords": [
     "design-system",
     "tailwind",
-    "pearl",
-    "pearl-research-labs",
+    "modelos",
     "shadcn",
     "components"
   ],

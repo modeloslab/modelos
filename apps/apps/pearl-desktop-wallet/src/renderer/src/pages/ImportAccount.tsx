@@ -163,7 +163,7 @@ export default function ImportAccount() {
                 <div className="relative">
                   <Input
                     id="walletName"
-                    placeholder="My Pearl Wallet"
+                    placeholder="My modelOS Wallet"
                     value={walletName}
                     onChange={e => setWalletName(e.target.value)}
                     className={`focus:border-brand-green focus:ring-brand-green/20 mt-2 border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm focus:ring-2 ${walletNameError

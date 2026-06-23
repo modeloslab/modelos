@@ -3,8 +3,8 @@ package chain
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/rpcclient"
 	"github.com/stretchr/testify/require"
 )
 

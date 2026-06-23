@@ -14,7 +14,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
+	"github.com/modelos/modelos/node/btcec"
 )
 
 type signatureTest struct {

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // helpDescsEnUS defines the English descriptions used for the help strings.

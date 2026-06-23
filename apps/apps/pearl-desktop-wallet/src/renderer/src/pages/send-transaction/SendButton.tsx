@@ -1,4 +1,4 @@
-import { Button } from '@pearl/ui';
+import { Button } from '@modelos/ui';
 import { ArrowUpRight } from 'lucide-react';
 
 type SendButtonProps = {

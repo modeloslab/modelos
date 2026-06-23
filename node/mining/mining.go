@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 const (
@@ -137,11 +137,27 @@ func (pq *txPriorityQueue) SetLessFunc(lessFunc txPriorityQueueLessFunc) {
 	heap.Init(pq)
 }
 
-// txPQByFee sorts a txPriorityQueue by fees per kilobyte only.
-// Transactions with higher fee rates are prioritized.
+// isInferenceTx reports whether tx is an inference-marketplace transaction — a v3
+// inference_tx (locks a bounty + broadcasts the job) or a v4 inference proof/claim.
+func isInferenceTx(tx *btcutil.Tx) bool {
+	if tx == nil || tx.MsgTx() == nil {
+		return false // nil-safe: the comparator must never panic on a malformed/placeholder item
+	}
+	v := tx.MsgTx().Version
+	return v == wire.TxVersionInference || v == wire.TxVersionInferenceProof
+}
+
+// txPQByFee sorts a txPriorityQueue so inference-marketplace transactions are mined first,
+// then by fees per kilobyte. The v3 inference_tx is time-sensitive — a GPU worker can only
+// pick up the job once it confirms — and the v4 claim must land inside the proof window, so
+// both are prioritized into the next block ahead of ordinary transactions regardless of fee.
 func txPQByFee(pq *txPriorityQueue, i, j int) bool {
-	// Using > here so that pop gives the highest fee item as opposed
-	// to the lowest. Sort by fee rate only.
+	pi, pj := isInferenceTx(pq.items[i].tx), isInferenceTx(pq.items[j].tx)
+	if pi != pj {
+		// An inference tx always sorts before a non-inference one.
+		return pi
+	}
+	// Within the same class, pop the highest fee rate first.
 	return pq.items[i].feePerKB > pq.items[j].feePerKB
 }
 

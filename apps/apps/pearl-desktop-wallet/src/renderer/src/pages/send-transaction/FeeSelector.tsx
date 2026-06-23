@@ -1,4 +1,4 @@
-import { formatPearlAmount } from '../../lib/crypto';
+import { formatMDLAmount } from '../../lib/crypto';
 import { Zap, Clock, Timer } from 'lucide-react';
 
 type FeeSelectorProps = {
@@ -89,7 +89,7 @@ export default function FeeSelector({
             {isLoadingFees ? (
               <div className="border-t-brand-green h-4 w-4 animate-spin rounded-full border-2 border-gray-300" />
             ) : (
-              `${formatPearlAmount(currentFee)} PRL`
+              `${formatMDLAmount(currentFee)} MDL`
             )}
           </span>
         </div>

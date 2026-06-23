@@ -7,8 +7,8 @@ package chaincfg
 import (
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // genesisCoinbaseTx is the coinbase transaction for the genesis blocks for
@@ -70,10 +70,10 @@ var genesisCoinbaseTx = wire.MsgTx{
 // genesisHash is the hash of the first block in the block chain for the main
 // network (genesis block).
 var genesisHash = chainhash.Hash([chainhash.HashSize]byte{
-	0xd7, 0xad, 0x8d, 0xc5, 0x41, 0x5f, 0xb5, 0x48,
-	0xff, 0x53, 0xef, 0xe7, 0x5f, 0x10, 0xe0, 0xe2,
-	0x74, 0x03, 0xd1, 0xa3, 0x3f, 0x07, 0xdd, 0x0c,
-	0x8f, 0x61, 0xff, 0xb7, 0x93, 0x30, 0x8d, 0xa1,
+	0xf7, 0xe5, 0xc5, 0x9a, 0x7d, 0xab, 0xc6, 0x3c,
+	0x12, 0x99, 0x44, 0x30, 0x98, 0x1b, 0xd9, 0x80,
+	0xea, 0x16, 0x1d, 0xf1, 0xc0, 0xce, 0xd6, 0x65,
+	0x95, 0x58, 0xbd, 0x0a, 0x79, 0x7f, 0xf6, 0x8c,
 })
 
 // genesisMerkleRoot is the hash of the first transaction in the genesis block
@@ -99,7 +99,7 @@ var genesisBlock = wire.MsgBlock{
 			Version:    1,
 			PrevBlock:  chainhash.Hash{},         // 0000000000000000000000000000000000000000000000000000000000000000
 			MerkleRoot: genesisMerkleRoot,        // 302f59c6f1239648bd38eddf16b22acc8c8df3c96de2e4f552bd2f38371675c1
-			Timestamp:  time.Unix(1777280400, 0), // 2026-04-27 09:00:00 +0000 UTC
+			Timestamp:  time.Unix(1780909200, 0), // 2026-06-08 09:00:00 +0000 UTC
 			Bits:       0x1b00ffff,               // [000000000000ffff000000000000000000000000000000000000000000000000]
 		},
 	},

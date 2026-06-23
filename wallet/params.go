@@ -4,6 +4,6 @@
 
 package main
 
-import "github.com/pearl-research-labs/pearl/wallet/netparams"
+import "github.com/modelos/modelos/wallet/netparams"
 
 var activeNet = &netparams.MainNetParams

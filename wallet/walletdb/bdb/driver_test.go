@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 )
 
 const (

@@ -3,8 +3,8 @@ package pushtx_test
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/pushtx"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/pushtx"
 )
 
 // TestParseBroadcastErrorCode ensures that we properly construct a

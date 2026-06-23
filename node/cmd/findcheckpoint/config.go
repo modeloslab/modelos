@@ -11,10 +11,10 @@ import (
 	"slices"
 
 	flags "github.com/jessevdk/go-flags"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/database"
-	_ "github.com/pearl-research-labs/pearl/node/database/ffldb"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/database"
+	_ "github.com/modelos/modelos/node/database/ffldb"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	pearldHomeDir   = btcutil.AppDataDir("pearld", false)
+	pearldHomeDir   = btcutil.AppDataDir("modelosd", false)
 	defaultDataDir  = filepath.Join(pearldHomeDir, "data")
 	knownDbTypes    = database.SupportedDrivers()
 	activeNetParams = &chaincfg.MainNetParams

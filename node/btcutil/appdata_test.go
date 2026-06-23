@@ -12,7 +12,7 @@ import (
 	"testing"
 	"unicode"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil"
 )
 
 // TestAppDataDir tests the API for AppDataDir to ensure it gives expected

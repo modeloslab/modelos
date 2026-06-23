@@ -27,21 +27,21 @@ import (
 	"time"
 
 	"github.com/btcsuite/websocket"
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/blockchain/indexers"
-	"github.com/pearl-research-labs/pearl/node/btcec/ecdsa"
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/mempool"
-	"github.com/pearl-research-labs/pearl/node/mining"
-	"github.com/pearl-research-labs/pearl/node/mining/cpuminer"
-	"github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	pearlversion "github.com/pearl-research-labs/pearl/version"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/blockchain/indexers"
+	"github.com/modelos/modelos/node/btcec/ecdsa"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/mempool"
+	"github.com/modelos/modelos/node/mining"
+	"github.com/modelos/modelos/node/mining/cpuminer"
+	"github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	pearlversion "github.com/modelos/modelos/version"
 )
 
 // API version constants
@@ -558,7 +558,7 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 	params := s.cfg.ChainParams
 	for encodedAddr, amount := range c.Amounts {
 		// Ensure amount is in the valid range for monetary amounts.
-		if amount <= 0 || amount*btcutil.GrainPerPearl > btcutil.MaxGrain {
+		if amount <= 0 || amount*btcutil.GrainPerMDL > btcutil.MaxGrain {
 			return nil, &btcjson.RPCError{
 				Code:    btcjson.ErrRPCType,
 				Message: "Invalid amount",
@@ -974,7 +974,7 @@ func handleGetAddedNodeInfo(s *rpcServer, cmd interface{}, closeChan <-chan stru
 		default:
 			// Do a DNS lookup for the address.  If the lookup fails, just
 			// use the host.
-			ips, err := pearldLookup(host)
+			ips, err := modelosLookup(host)
 			if err != nil {
 				ipList = make([]string, 1)
 				ipList[0] = host
@@ -1927,16 +1927,19 @@ func handleGetBlockTemplateRequest(s *rpcServer, request *btcjson.TemplateReques
 
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCClientNotConnected,
-			Message: "Pearl is not connected",
+			Message: "modelOS is not connected",
 		}
 	}
 
-	// No point in generating or accepting work before the chain is synced.
+	// No point in generating or accepting work before the chain is synced — UNLESS this is a
+	// private/solo chain where this node is the sole block producer (--miningnoibdcheck). There the
+	// IBD/24h-tip-age gate is a deadlock: the tip goes stale, IsCurrent() turns false, the node
+	// refuses templates, so no block can be mined to refresh the tip. The bypass lets it mine again.
 	currentHeight := s.cfg.Chain.BestSnapshot().Height
-	if currentHeight != 0 && !s.cfg.SyncMgr.IsCurrent() {
+	if currentHeight != 0 && !cfg.MiningNoIBDCheck && !s.cfg.SyncMgr.IsCurrent() {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCClientInInitialDownload,
-			Message: "Pearl is downloading blocks...",
+			Message: "modelOS is downloading blocks...",
 		}
 	}
 
@@ -3681,7 +3684,7 @@ func handleStop(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (inter
 	case s.requestProcessShutdown <- struct{}{}:
 	default:
 	}
-	return "pearld stopping.", nil
+	return "modelosd stopping.", nil
 }
 
 // handleSubmitBlock implements the submitblock command.
@@ -3862,7 +3865,7 @@ func handleVerifyChain(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 // NOTE: This is a Pearl extension ported from github.com/decred/dcrd.
 func handleVersion(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := map[string]btcjson.VersionResult{
-		"pearldjsonrpcapi": {
+		"modelosjsonrpcapi": {
 			VersionString: jsonrpcSemverString,
 			Major:         jsonrpcSemverMajor,
 			Minor:         jsonrpcSemverMinor,
@@ -4618,7 +4621,7 @@ func (s *rpcServer) jsonRPCRead(w http.ResponseWriter, r *http.Request, isAdmin 
 
 // jsonAuthFail sends a message back to the client if the http auth is rejected.
 func jsonAuthFail(w http.ResponseWriter) {
-	w.Header().Add("WWW-Authenticate", `Basic realm="pearld RPC"`)
+	w.Header().Add("WWW-Authenticate", `Basic realm="modelosd RPC"`)
 	http.Error(w, "401 Unauthorized.", http.StatusUnauthorized)
 }
 
@@ -4699,7 +4702,7 @@ func (s *rpcServer) Start() {
 func genCertPair(certFile, keyFile string) error {
 	rpcsLog.Infof("Generating TLS certificates...")
 
-	org := "pearld autogenerated cert"
+	org := "modelosd autogenerated cert"
 	validUntil := time.Now().Add(10 * 365 * 24 * time.Hour)
 	cert, key, err := btcutil.NewTLSCertPair(org, validUntil, nil)
 	if err != nil {

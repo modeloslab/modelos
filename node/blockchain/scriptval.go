@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // txValidateItem holds a transaction along with which input to validate.
@@ -219,6 +219,13 @@ func ValidateTransactionScripts(tx *btcutil.Tx, utxoView *UtxoViewpoint,
 			continue
 		}
 
+		// Skip inference bounty covenant inputs (validated by the covenant
+		// rule, not the script engine).
+		if entry := utxoView.LookupEntry(txIn.PreviousOutPoint); entry != nil &&
+			IsInferenceBountyScript(entry.PkScript()) {
+			continue
+		}
+
 		txVI := &txValidateItem{
 			txInIndex: txInIdx,
 			txIn:      txIn,
@@ -271,6 +278,14 @@ func checkBlockScripts(block *btcutil.Block, utxoView *UtxoViewpoint,
 		for txInIdx, txIn := range tx.MsgTx().TxIn {
 			// Skip coinbases.
 			if txIn.PreviousOutPoint.Index == math.MaxUint32 {
+				continue
+			}
+
+			// Skip inference bounty covenant inputs: their script is not
+			// executable and they are validated by checkInferenceBountySpends
+			// (the inference covenant rule) instead of the script engine.
+			if entry := utxoView.LookupEntry(txIn.PreviousOutPoint); entry != nil &&
+				IsInferenceBountyScript(entry.PkScript()) {
 				continue
 			}
 

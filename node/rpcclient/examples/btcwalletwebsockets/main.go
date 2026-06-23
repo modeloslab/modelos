@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/rpcclient"
 )
 
 func main() {

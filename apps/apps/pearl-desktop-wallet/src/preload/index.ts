@@ -71,6 +71,44 @@ const updateIpc: UpdateApi = {
   },
 };
 
+// Inference IPC — exposed separately as window.api for the InferencePage.
+//
+// Results are PUSHED from the wallet's relay server when the winning miner
+// delivers the answer.  No polling needed — just register a listener.
+const inferenceApi = {
+  submitInferenceTx: (params: {
+    prompt: string;
+    feeGrains: number;
+    maxTokens: number;
+    feeTier: string;
+  }) => ipcRenderer.invoke('inference-submit', params),
+
+  // Call this if the page reloads and you need to check if a result arrived.
+  getInferenceResult: (params: { promptHash: string }) =>
+    ipcRenderer.invoke('inference-get-result', params),
+
+  // Register a callback — fires immediately when miner delivers the answer.
+  // Returns an unsubscribe function.
+  onInferenceResult: (
+    callback: (data: { promptHash: string; result: string; status: string }) => void
+  ): (() => void) => {
+    const handler = (_event: unknown, data: { promptHash: string; result: string; status: string }) =>
+      callback(data);
+    ipcRenderer.on('inference-result', handler);
+    return () => ipcRenderer.removeListener('inference-result', handler);
+  },
+
+  getRelayInfo: () => ipcRenderer.invoke('inference-relay-info'),
+
+  // Live fee suggestions from pool — slow/median/fast in grains + MDL.
+  getFeeStats: () => ipcRenderer.invoke('inference-fee-stats'),
+
+  // Per-model miner availability — { "1": N, "2": N, ... } derived from
+  // confirmed inference_proof_tx wins in the last 24h, no miner self-reporting.
+  getModelAvailability: (): Promise<Record<string, number>> =>
+    ipcRenderer.invoke('inference-model-availability'),
+};
+
 const appBridge: AppBridge = {
   window: windowIpc,
   wallet: walletIpc,
@@ -80,3 +118,4 @@ const appBridge: AppBridge = {
 };
 
 contextBridge.exposeInMainWorld('appBridge', appBridge);
+contextBridge.exposeInMainWorld('api', inferenceApi);

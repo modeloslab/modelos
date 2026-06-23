@@ -3,8 +3,8 @@ package psbt
 import (
 	"bytes"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcec/ecdsa"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcec/ecdsa"
 )
 
 // PartialSig encapsulate a (public key, ECDSA signature)

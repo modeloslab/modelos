@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	"github.com/pearl-research-labs/pearl/xmss"
+	"github.com/modelos/modelos/wallet/walletdb"
+	"github.com/modelos/modelos/xmss"
 	"golang.org/x/crypto/hkdf"
 )
 

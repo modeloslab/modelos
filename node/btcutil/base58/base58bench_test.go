@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/base58"
+	"github.com/modelos/modelos/node/btcutil/base58"
 )
 
 var (

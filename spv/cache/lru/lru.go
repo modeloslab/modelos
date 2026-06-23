@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/lightningnetwork/lnd/fn/v2"
-	"github.com/pearl-research-labs/pearl/spv/cache"
+	"github.com/modelos/modelos/spv/cache"
 )
 
 // OnDeleteCallback is a function type that gets called when an element is

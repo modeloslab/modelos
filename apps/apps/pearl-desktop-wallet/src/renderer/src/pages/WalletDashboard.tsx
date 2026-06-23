@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Copy, CheckCircle2, ArrowUpRight, ArrowDownLeft, Lock, Key, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWalletStore } from '../store/walletStore';
-import { formatPearlAmount } from '../lib/crypto';
+import { formatMDLAmount } from '../lib/crypto';
 import {
   Tooltip,
   TooltipContent,
@@ -93,7 +93,7 @@ export default function WalletDashboard() {
           </div>
 
           {/* Address Display - only show if wallet name is default */}
-          {walletAddress && walletName === 'Pearl Wallet' && (
+          {walletAddress && walletName === 'modelOS Wallet' && (
             <div className="flex items-center justify-center gap-3 text-gray-600">
               <span className="font-mono text-base" title={`Full address: ${walletAddress}`}>
                 {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
@@ -116,7 +116,7 @@ export default function WalletDashboard() {
             <div className="text-base text-gray-600">Total Balance</div>
             {typeof balance === 'number' ? (
               <div className="text-4xl font-bold text-gray-900 sm:text-5xl text-nowrap">
-                {formatPearlAmount(balance)} PRL
+                {formatMDLAmount(balance)} MDL
               </div>
             ) : (
               <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-900 sm:h-8 sm:w-8" />
@@ -243,7 +243,7 @@ export default function WalletDashboard() {
                         }`}
                     >
                       {activity.type === 'received' ? '+' : '-'}
-                      {activity.amount} PRL
+                      {activity.amount} MDL
                     </div>
                   </div>
                 ))

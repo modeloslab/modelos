@@ -8,10 +8,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain/internal/workmath"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain/internal/workmath"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // HashToBig converts a chainhash.Hash into a big.Int that can be used to
@@ -70,17 +70,16 @@ func CalcWork(bits uint32) *big.Int {
 	return workmath.CalcWork(bits)
 }
 
-// calcNextRequiredDifficulty calculates the required difficulty for the
-// next block using the WTEMA (Weighted Target Exponential Moving Average)
-// algorithm. The difficulty adjusts every block using the formula:
+// calcNextRequiredDifficulty calculates the required difficulty for the next
+// block.  modelOS uses a two-phase approach:
 //
-//	new_target = old_target + (t - T) * old_target / half_life
-//
-// Where:
-//   - T = target time per block (e.g., 600 seconds for 10 minutes)
-//   - t = actual time for the last block (current_timestamp - prev_timestamp)
-//   - half_life = WTEMA half-life (e.g., 2 days)
-//   - old_target = current difficulty target
+//   - Phase 1 (blocks 0–15860): WTEMA — identical to Pearl, preserving the
+//     cold-start treasury accumulation window. (See colossusAuxPowActivationBlock
+//     in aserti.go.)
+//   - Phase 2 (blocks 15861+): Colossus 2.0 = pure absolute ASERT (aserti3-2d,
+//     integer math) — smooth, drift-free, no float in consensus. See aserti.go.
+//     (Colossus 1.0, a Median-144 + ASERT hybrid, was removed: simulation showed
+//     it telescoped and oscillated >1000% under hashrate steps — daa_sim.py.)
 func calcNextRequiredDifficulty(lastNode chaincfg.HeaderCtx, newBlockTime time.Time,
 	c ChainCtx) (uint32, error) {
 
@@ -104,42 +103,43 @@ func calcNextRequiredDifficulty(lastNode chaincfg.HeaderCtx, newBlockTime time.T
 		}
 	}
 
-	// Get the parent node for time calculation.
-	// We need the time between the last block and its parent.
+	// Phase 2: pure absolute ASERT (aserti3-2d) activates at colossusAuxPowActivationBlock
+	// (15860). The block AT the activation height is the ASERT anchor (set by
+	// Phase-1 WTEMA); ASERT governs every block after it, so the anchor always
+	// exists when this runs. Replaces the earlier Colossus median+ASERT hybrid,
+	// which simulation proved oscillated >1000% under hashrate steps (see aserti.go
+	// and blockchain/daa_sim.py).
+	if lastNode.Height() >= colossusAuxPowActivationBlock {
+		newTarget := calcNextAsertTarget(lastNode, c.ChainParams().PowLimit)
+		newTargetBits := BigToCompact(newTarget)
+		log.Debugf("ASERT target %08x (%064x) at height %d",
+			newTargetBits, newTarget, lastNode.Height()+1)
+		return newTargetBits, nil
+	}
+
+	// Phase 1: Pearl-identical WTEMA.
 	parentNode := lastNode.Parent()
 	if parentNode == nil {
-		// First block after genesis - use genesis difficulty.
 		return lastNode.Bits(), nil
 	}
 
-	// Calculate actual time for the last block (t).
 	t := lastNode.Timestamp() - parentNode.Timestamp()
+	T := int64(c.ChainParams().TargetTimePerBlock / time.Second)
+	halfLife := int64(c.ChainParams().WTEMAHalfLife / time.Second)
 
-	// Get WTEMA parameters.
-	T := int64(c.ChainParams().TargetTimePerBlock / time.Second)   // Target time per block in seconds
-	halfLife := int64(c.ChainParams().WTEMAHalfLife / time.Second) // Half-life in seconds
-
-	// Get current target from the last block.
 	oldTarget := CompactToBig(lastNode.Bits())
-
-	// Calculate: new_target = old_target + (t - T) * old_target / half_life
 	adjustment := new(big.Int).Mul(big.NewInt(t-T), oldTarget)
 	adjustment.Div(adjustment, big.NewInt(halfLife))
-
 	newTarget := new(big.Int).Add(oldTarget, adjustment)
 
-	// Ensure the new target doesn't exceed the proof of work limit.
 	if newTarget.Cmp(c.ChainParams().PowLimit) > 0 {
 		newTarget.Set(c.ChainParams().PowLimit)
 	}
-
-	// Ensure target doesn't go below 1 (would cause divide by zero in work calc).
 	if newTarget.Sign() <= 0 {
 		newTarget.SetInt64(1)
 	}
 
 	newTargetBits := BigToCompact(newTarget)
-
 	log.Debugf("WTEMA difficulty adjustment at block height %d", lastNode.Height()+1)
 	log.Debugf("Old target %08x (%064x)", lastNode.Bits(), oldTarget)
 	log.Debugf("New target %08x (%064x)", newTargetBits, CompactToBig(newTargetBits))

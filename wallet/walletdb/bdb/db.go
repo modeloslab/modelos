@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/walletdb"
 	"go.etcd.io/bbolt"
 )
 

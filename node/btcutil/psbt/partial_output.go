@@ -5,7 +5,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // POutput is a struct encapsulating all the data that can be attached

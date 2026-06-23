@@ -420,6 +420,23 @@ var helpDescsEnUS = map[string]string{
 	"chainsynced--synopsis": "Returns whether the wallet's chain backend is synced to the best block.",
 	"chainsynced--result0":  "Whether the chain is synced",
 
+	// SendInferenceTxCmd help.
+	"sendinferencetx--synopsis":    "Authors, signs, and broadcasts a version-3 inference_tx to the modelOS network.\n" + "The fee output (TxOut[0]) is locked at feeGrains for the first GPU worker to submit a valid proof.\n" + "The OP_RETURN output carries the InferencePayload so that miners can locate the off-chain prompt,\n" + "run inference, and claim the fee by submitting an InferenceProof transaction (version 4).",
+	"sendinferencetx-prompthash":    "Hex-encoded 32-byte BLAKE3 hash of the off-chain prompt",
+	"sendinferencetx-resultaddress": "Relay URL where miners POST the inference result (max 64 bytes, e.g. \"http://1.2.3.4:44211\")",
+	"sendinferencetx-feegrains":     "Inference fee in grains (minimum 1000000 = 0.01 MDL)",
+	"sendinferencetx-maxtokens":     "Maximum tokens to generate (consensus maximum 65535)",
+	"sendinferencetx-modelversion":  "Model identifier: 1=DeepSeek-R1-70B (default), 2=Qwen3-32B, 3=Qwen3-14B, 4=DeepSeek-R1-0528-Qwen3-8B",
+	"sendinferencetx--result0":      "The transaction hash of the submitted inference_tx",
+
+	// SendInferenceProofCmd help.
+	"sendinferenceproof--synopsis":    "Spends the wallet-owned inference fee output of an inference_tx and pays it to a GPU worker.\n" + "Builds and broadcasts a version-4 inference_proof_tx whose OP_RETURN carries the signed\n" + "InferenceResultProof.  The wallet signs TxOut[0] of the original inference_tx and routes\n" + "the locked grains to the worker's P2TR address, deducting the proof tx fee.",
+	"sendinferenceproof-inferencetxid": "Hex txid of the version-3 inference_tx whose TxOut[0] holds the locked fee",
+	"sendinferenceproof-proofscript":   "Hex-encoded 197-byte OP_RETURN proof script (OP_RETURN OP_PUSHDATA1 0xc2 <194-byte InferenceResultProof>)",
+	"sendinferenceproof-workerscript":  "Hex-encoded 34-byte P2TR scriptPubKey (OP_1 OP_PUSHBYTES_32 <x-only-pubkey>) of the inference worker receiving the fee",
+	"sendinferenceproof-resulttext":    "Plaintext inference result delivered to the wallet relay — wallet verifies SHA3-256(resultText) matches ResultHash in the proof before paying; omit to skip check",
+	"sendinferenceproof--result0":      "The transaction hash of the submitted inference_proof_tx",
+
 	// GetSyncProgressCmd help.
 	"getsyncprogress--synopsis":                  "Returns the current SPV sync progress across block headers, filter headers, and blocks.",
 	"getsyncprogressresult-header_height":        "The height of the best block header synced so far",

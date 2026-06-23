@@ -1,10 +1,10 @@
 {
-  "name": "@pearl/pearl-desktop-wallet",
+  "name": "@modelos/modelos-desktop-wallet",
   "version": "1.0.0",
-  "description": "Pearl Desktop Wallet - A modern cryptocurrency wallet application",
+  "description": "modelOS Desktop Wallet - The official MDL wallet application",
   "author": {
-    "name": "Pearl Research Labs",
-    "email": "support@pearlresearch.ai"
+    "name": "modelOS",
+    "email": "support@modeloslab.xyz"
   },
   "private": true,
   "type": "module",
@@ -18,14 +18,14 @@
     "preview": "electron-vite preview",
     "pack": "pnpm run build && electron-builder --dir",
     "dist": "pnpm run build && electron-builder",
-    "logs": "tail -f ~/Library/Logs/@pearl/pearl-desktop-wallet/main.log",
-    "logs:open": "open ~/Library/Logs/@pearl/pearl-desktop-wallet/"
+    "logs": "tail -f ~/Library/Logs/@modelos/modelos-desktop-wallet/main.log",
+    "logs:open": "open ~/Library/Logs/@modelos/modelos-desktop-wallet/"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.13.4",
     "@grpc/proto-loader": "^0.8.0",
     "@hookform/resolvers": "^5.2.1",
-    "@pearl/ui": "workspace:*",
+    "@modelos/ui": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
