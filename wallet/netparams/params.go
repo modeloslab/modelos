@@ -5,8 +5,8 @@
 package netparams
 
 import (
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // Params is used to group parameters for various networks such as the main

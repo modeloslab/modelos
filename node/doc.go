@@ -3,23 +3,23 @@
 // license that can be found in the LICENSE file.
 
 /*
-pearld is a full-node Pearl network implementation written in Go.
+modelosd is a full-node modelOS network implementation written in Go.
 
-The default options are sane for most users.  This means pearld will work 'out of
+The default options are sane for most users.  This means modelosd will work 'out of
 the box' for most users.  However, there are also a wide variety of flags that
 can be used to control it.
 
 The following section provides a usage overview which enumerates the flags.  An
 interesting point to note is that the long form of all of these options
 (except -C) can be specified in a configuration file that is automatically
-parsed when pearld starts up.  By default, the configuration file is located at
-~/.pearld/pearld.conf on POSIX-style operating systems and %LOCALAPPDATA%\pearld\pearld.conf
+parsed when modelosd starts up.  By default, the configuration file is located at
+~/.modelosd/modelos.conf on POSIX-style operating systems and %LOCALAPPDATA%\modelosd\modelos.conf
 on Windows.  The -C (--configfile) flag, as shown below, can be used to override
 this location.
 
 Usage:
 
-	pearld [OPTIONS]
+	modelosd [OPTIONS]
 
 Application Options:
 

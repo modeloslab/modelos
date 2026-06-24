@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/bech32"
+	"github.com/modelos/modelos/node/btcutil/bech32"
 )
 
 // This example demonstrates how to decode a bech32 encoded string.

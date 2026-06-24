@@ -4,7 +4,7 @@
 
 package main
 
-import "github.com/pearl-research-labs/pearl/node/chaincfg"
+import "github.com/modelos/modelos/node/chaincfg"
 
 // activeNetParams is a pointer to the parameters specific to the
 // currently active Pearl network.

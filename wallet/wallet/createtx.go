@@ -11,15 +11,15 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txauthor"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txsizes"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet/txauthor"
+	"github.com/modelos/modelos/wallet/wallet/txsizes"
+	"github.com/modelos/modelos/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 )
 
 func makeInputSource(eligible []Coin) txauthor.InputSource {
@@ -157,7 +157,7 @@ func (w *Wallet) txToOutputs(outputs []*wire.TxOut,
 	account uint32, minconf int32, feeSatPerKb btcutil.Amount,
 	strategy CoinSelectionStrategy, dryRun bool,
 	selectedUtxos []wire.OutPoint,
-	allowUtxo func(utxo wtxmgr.Credit) bool) (
+	allowUtxo func(utxo wtxmgr.Credit) bool, txVersion int32) (
 	*txauthor.AuthoredTx, error) {
 
 	chainClient, err := w.requireChainClient()
@@ -271,6 +271,13 @@ func (w *Wallet) txToOutputs(outputs []*wire.TxOut,
 		)
 		if err != nil {
 			return err
+		}
+
+		// Override transaction version when the caller requests a
+		// special type (e.g. TxVersionInference = 3).  Must be done
+		// before signing so that the version is included in sighashes.
+		if txVersion != 0 {
+			tx.Tx.Version = txVersion
 		}
 
 		// Randomize change position, if change exists, before signing.

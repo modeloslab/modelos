@@ -13,7 +13,7 @@ import (
 	"io"
 	"runtime/debug"
 
-	"github.com/pearl-research-labs/pearl/wallet/internal/zero"
+	"github.com/modelos/modelos/wallet/internal/zero"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/scrypt"
 )

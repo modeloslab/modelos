@@ -6,12 +6,12 @@ import (
 	"net"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcec"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // setupConnPair initiates a tcp connection between two peers.
@@ -82,7 +82,7 @@ func setupConnPair() (net.Conn, net.Conn, error) {
 //
 // This function was copied from:
 //
-//	https://github.com/pearl-research-labs/pearl/node/blob/36a96f6a0025b6aeaebe4106821c2d46ee4be8d4/blockchain/fullblocktests/generate.go#L303
+//	https://github.com/modelos/modelos/node/blob/36a96f6a0025b6aeaebe4106821c2d46ee4be8d4/blockchain/fullblocktests/generate.go#L303
 //
 //nolint:lll
 func calcMerkleRoot(txns []*wire.MsgTx) chainhash.Hash {

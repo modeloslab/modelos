@@ -74,7 +74,7 @@ func round(f float64) Amount {
 // NewAmount is specifically for converting PRL to Grain.
 // For creating a new Amount with an int64 value which denotes a quantity of Grain,
 // do a simple type conversion from type int64 to Amount.
-// See GoDoc for example: https://pkg.go.dev/github.com/pearl-research-labs/pearl/node/btcutil#example-Amount
+// See GoDoc for example: https://pkg.go.dev/github.com/modelos/modelos/node/btcutil#example-Amount
 func NewAmount(f float64) (Amount, error) {
 	// The amount is only considered invalid if it cannot be represented
 	// as an integer type.  This may happen if f is NaN or +-Infinity.
@@ -87,7 +87,7 @@ func NewAmount(f float64) (Amount, error) {
 		return 0, errors.New("invalid pearl amount")
 	}
 
-	return round(f * GrainPerPearl), nil
+	return round(f * GrainPerMDL), nil
 }
 
 // ToUnit converts a monetary amount counted in base units to a

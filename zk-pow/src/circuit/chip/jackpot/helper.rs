@@ -12,10 +12,31 @@ pub fn compute_jackpot(
     secret_b: &[Vec<i8>],
     noise: &MMSlice,
 ) -> [u32; JACKPOT_SIZE] {
-    let h = public_params.h;
-    let w = public_params.w;
-    let k = public_params.k;
-    let r = public_params.r;
+    compute_jackpot_dims(
+        public_params.h,
+        public_params.w,
+        public_params.k,
+        public_params.r,
+        secret_a,
+        secret_b,
+        noise,
+    )
+}
+
+/// Jackpot message computation parameterized by the raw tile dimensions instead of a
+/// `CompiledPublicParams`. This is the exact body `compute_jackpot` runs — extracted so a cheap
+/// host pre-filter can recompute the jackpot directly from the opened strips + noise (the same
+/// (h, w, k, r) the verifier uses) WITHOUT building a `CompiledPublicParams` (which needs the full
+/// Merkle/blake program). `compute_jackpot` delegates here, so the two paths are byte-identical.
+pub fn compute_jackpot_dims(
+    h: usize,
+    w: usize,
+    k: usize,
+    r: usize,
+    secret_a: &[Vec<i8>],
+    secret_b: &[Vec<i8>],
+    noise: &MMSlice,
+) -> [u32; JACKPOT_SIZE] {
     let mut jackpot = vec![vec![0i32; w]; h];
     let mut jackpot_msg: [u32; 16] = [0; JACKPOT_SIZE];
     for ll in (r..=k).step_by(r) {

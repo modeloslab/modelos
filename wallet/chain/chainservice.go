@@ -3,14 +3,14 @@ package chain
 import (
 	"context"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	neutrino "github.com/pearl-research-labs/pearl/spv"
-	"github.com/pearl-research-labs/pearl/spv/banman"
-	"github.com/pearl-research-labs/pearl/spv/headerfs"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
+	neutrino "github.com/modelos/modelos/spv"
+	"github.com/modelos/modelos/spv/banman"
+	"github.com/modelos/modelos/spv/headerfs"
 )
 
 // NeutrinoChainService is an interface that encapsulates all the public

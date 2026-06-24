@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"github.com/pearl-research-labs/pearl/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil"
 )
 
 // Virtual size ("vsize") is a consensus metric that measures the "weight" of

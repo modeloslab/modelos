@@ -7,7 +7,7 @@ import (
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
-	"github.com/pearl-research-labs/pearl/coredns-dnsseed/crawler"
+	"github.com/modelos/modelos/coredns-dnsseed/crawler"
 )
 
 // PearlSeeder discovers IP addresses by crawling the Pearl P2P network.

@@ -8,8 +8,8 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btclog"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/wire"
 )
 
 var log = btclog.Disabled

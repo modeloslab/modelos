@@ -1,6 +1,8 @@
+[workspace]
+
 [package]
 name = "py-pearl-mining"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Unified Python bindings for Pearl mining (blake3 merkle trees + ZK proof)"
 
@@ -10,7 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pearl-blake3 = { path = "../pearl-blake3", features = ["serde", "pyo3"] }
-zk-pow = { path = "../zk-pow", features = ["pyo3"] }
+zk-pow = { path = "../zk-pow", features = ["pyo3", "embedded_cache"] }
 blake3 = "1.8"
 rayon = "1.10"
 pyo3 = { version = "0.24", features = ["extension-module", "abi3-py312"] }

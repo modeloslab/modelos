@@ -3,7 +3,7 @@ package blockntfns
 import (
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // BlockNtfn is an interface that coalesces all the different types of block

@@ -10,7 +10,7 @@ export default function TransactionPreview({ amount, address, currentFee }: Tran
       <div className="text-sm text-neutral-400">Transaction Preview</div>
       <div className="flex justify-between">
         <span className="text-neutral-400">Amount:</span>
-        <span className="font-medium text-gray-900">{amount} PRL</span>
+        <span className="font-medium text-gray-900">{amount} MDL</span>
       </div>
       <div className="flex justify-between">
         <span className="text-neutral-400">To:</span>
@@ -21,7 +21,7 @@ export default function TransactionPreview({ amount, address, currentFee }: Tran
       <div className="flex justify-between">
         <span className="text-neutral-400">Transaction Fee / kb:</span>
         <span className="text-gray-900">
-          {typeof currentFee === 'number' ? currentFee : currentFee} PRL
+          {typeof currentFee === 'number' ? currentFee : currentFee} MDL
         </span>
       </div>
     </div>

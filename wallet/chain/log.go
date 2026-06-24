@@ -6,7 +6,7 @@ package chain
 
 import (
 	"github.com/btcsuite/btclog"
-	"github.com/pearl-research-labs/pearl/spv/query"
+	"github.com/modelos/modelos/spv/query"
 )
 
 // log is a logger that is initialized with no output filters.  This

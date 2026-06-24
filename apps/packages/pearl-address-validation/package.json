@@ -1,7 +1,7 @@
 {
-  "name": "@pearl/pearl-address-validation",
+  "name": "@modelos/address-validation",
   "version": "3.0.0",
-  "description": "Validate Pearl Taproot (P2TR) addresses using bech32m encoding for mainnet, testnet, regtest, and simnet networks.",
+  "description": "Validate modelOS Taproot (P2TR) addresses using bech32m encoding for mainnet, testnet, regtest, and simnet networks.",
   "main": "dist/index.js",
   "files": [
     "dist"
@@ -20,8 +20,7 @@
   },
   "keywords": [
     "address",
-    "pearl",
-    "pearl-research-labs",
+    "modelos",
     "validation",
     "mainnet",
     "testnet",
@@ -33,14 +32,14 @@
     "witness-v1"
   ],
   "author": {
-    "name": "Liad Madmon",
-    "email": "liad.madmon@pearlresearch.ai",
-    "url": "https://pearlresearch.ai"
+    "name": "modelOS",
+    "email": "dev@modeloslab.xyz",
+    "url": "https://modeloslab.xyz"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pearl-research-labs/pearl/apps/packages/pearl-address-validation"
+    "url": "https://github.com/modelos/modelos/apps/packages/address-validation"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.3",

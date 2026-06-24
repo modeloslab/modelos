@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/waddrmgr"
 )
 
 // TestErrorCodeStringer tests the stringized output for the ErrorCode type.

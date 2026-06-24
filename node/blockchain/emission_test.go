@@ -6,72 +6,43 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
 )
 
-// TestEmissionSchedule verifies the emission curve follows the expected formula
+// TestEmissionSchedule verifies the piecewise (inference-block) emission schedule:
+// flat reward for the first inferenceBlocks blocks, then the standard curve resumes, with the
+// 21,000,000 MDL total supply preserved.
 func TestEmissionSchedule(t *testing.T) {
-	totalSupplyTokens := int64(2100000000) // 2 billion and 100 million tokens
-
-	// Test key block heights in the emission schedule
-	testCases := []struct {
-		height             int32
-		expectedPercent    float64
-		expectedSubsidy    float64
-		expectedCumulative float64
-	}{
-		{1, 0.000154, 3229.641, 0.00000323},
-		{650226, 50.0, 807.412, 1.05},
-		{1300452, 66.67, 358.850, 1.40},
-		{1950678, 75.0, 201.853, 1.575},
-		{3251130, 83.33, 89.712, 1.75},
-		{6502260, 90.91, 26.691, 1.909},
-		{32511300, 98.04, 1.242, 2.059},
+	// Phase 1 — inference blocks pay the flat reward.
+	for _, h := range []int32{1, 100, inferenceBlocks} {
+		if got := CalcBlockSubsidy(h, &chaincfg.MainNetParams); got != inferenceRewardGrains {
+			t.Errorf("Height %d: expected inference reward %d grains, got %d", h, inferenceRewardGrains, got)
+		}
 	}
 
-	fmt.Println("\n=== Per-Block Emission Schedule (Absolute Amounts) ===")
-	fmt.Printf("Total Supply: %d Pearl (2 billion and 100 million)\n", totalSupplyTokens)
-	fmt.Printf("Emission Constant: 650,226 blocks (~4 years at 3 min 14 sec/block)\n\n")
-	fmt.Printf("%-12s %-20s %-25s %-15s\n", "Height", "Subsidy (Pearl)", "Cumulative (Pearl)", "Percent")
-	fmt.Println("--------------------------------------------------------------------------------")
+	// Phase 1 cumulative at the boundary = inferenceBlocks × reward (600,000 MDL for 240 × 2,500).
+	wantPhase1 := int64(inferenceBlocks) * inferenceRewardGrains
+	if c := calculateCumulativeSupply(inferenceBlocks); c != wantPhase1 {
+		t.Errorf("cumulative at block %d: expected %d grains, got %d", inferenceBlocks, wantPhase1, c)
+	}
+	fmt.Printf("\n=== Inference-block schedule ===\n")
+	fmt.Printf("Phase 1: %d blocks × %.0f MDL = %.0f MDL\n",
+		inferenceBlocks, float64(inferenceRewardGrains)/float64(btcutil.GrainPerMDL),
+		float64(wantPhase1)/float64(btcutil.GrainPerMDL))
 
-	for _, tc := range testCases {
-		subsidy := CalcBlockSubsidy(tc.height, &chaincfg.MainNetParams)
+	// Phase 2 — standard curve resumes: first block far below the inference reward, and > 0.
+	first := CalcBlockSubsidy(inferenceBlocks+1, &chaincfg.MainNetParams)
+	if first <= 0 || first >= inferenceRewardGrains {
+		t.Errorf("Phase-2 first block subsidy %d should be >0 and far below the inference reward %d",
+			first, inferenceRewardGrains)
+	}
+	fmt.Printf("Phase 2 starts at block %d: %.2f MDL/block\n",
+		inferenceBlocks+1, float64(first)/float64(btcutil.GrainPerMDL))
 
-		cumulativePercent := float64(tc.height) / float64(int64(tc.height)+defaultEmissionConstant) * 100
-
-		cumulativeTokens := calculateCumulativeSupply(tc.height)
-		cumulativeTokensDisplay := float64(cumulativeTokens) / float64(btcutil.GrainPerPearl)
-
-		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
-
-		fmt.Printf("%-12d %-20.2f %-25s %-15.2f%%\n",
-			tc.height,
-			subsidyPearl,
-			formatPearl(cumulativeTokensDisplay),
-			cumulativePercent,
-		)
-
-		diff := cumulativePercent - tc.expectedPercent
-		if diff < -0.5 || diff > 0.5 {
-			t.Errorf("Height %d: expected ~%.2f%%, got %.2f%%", tc.height, tc.expectedPercent, cumulativePercent)
-		}
-
-		// Verify subsidy amount is close to expected (within 1%)
-		subsidyDiff := (subsidyPearl - tc.expectedSubsidy) / tc.expectedSubsidy * 100
-		if subsidyDiff < -1 || subsidyDiff > 1 {
-			t.Errorf("Height %d: expected ~%.2f Pearl/block, got %.2f Pearl/block",
-				tc.height, tc.expectedSubsidy, subsidyPearl)
-		}
-
-		// Verify cumulative amount (within 1%)
-		cumulativeBillions := cumulativeTokensDisplay / 1e9
-		cumulativeDiff := (cumulativeBillions - tc.expectedCumulative) / tc.expectedCumulative * 100
-		if cumulativeDiff < -1 || cumulativeDiff > 1 {
-			t.Errorf("Height %d: expected ~%.2fB Pearl cumulative, got %.2fB Pearl cumulative",
-				tc.height, tc.expectedCumulative, cumulativeBillions)
-		}
+	// Total supply preserved: cumulative never exceeds 21,000,000 MDL.
+	if c := calculateCumulativeSupply(int32(math.MaxInt32)); c > int64(totalSupply) {
+		t.Errorf("cumulative supply %d exceeds the 21M cap %d", c, int64(totalSupply))
 	}
 }
 
@@ -87,60 +58,32 @@ func formatPearl(amount float64) string {
 	return fmt.Sprintf("%.2f", amount)
 }
 
-// TestEmissionDecline verifies that emission decreases smoothly every block
+// TestEmissionDecline verifies the inference phase is flat, then the curve never increases.
 func TestEmissionDecline(t *testing.T) {
-	fmt.Println("\n=== First 20 Blocks Emission (Absolute Amounts) ===")
-	fmt.Printf("%-10s %-22s %-25s %-15s\n", "Height", "Subsidy (Pearl)", "Cumulative (Pearl)", "Cumulative %")
-	fmt.Println("--------------------------------------------------------------------------------")
+	// Phase 1 — inference blocks are FLAT at the inference reward.
+	for height := int32(1); height <= inferenceBlocks; height++ {
+		if got := CalcBlockSubsidy(height, &chaincfg.MainNetParams); got != inferenceRewardGrains {
+			t.Fatalf("Height %d: inference phase should be flat %d, got %d", height, inferenceRewardGrains, got)
+		}
+	}
 
-	var previousSubsidy int64 = -1
-
-	for height := int32(1); height <= 20; height++ {
+	// Phase 2 — standard curve resumes and must never increase block-to-block.
+	previousSubsidy := CalcBlockSubsidy(inferenceBlocks+1, &chaincfg.MainNetParams)
+	for height := inferenceBlocks + 2; height <= inferenceBlocks+5000; height++ {
 		subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
-		cumulativePercent := float64(height) / float64(int64(height)+defaultEmissionConstant) * 100
-		cumulativeTokens := calculateCumulativeSupply(height)
-		cumulativePearl := float64(cumulativeTokens) / float64(btcutil.GrainPerPearl)
-
-		fmt.Printf("%-10d %-22.2f %-25s %-15.6f%%\n",
-			height,
-			subsidyPearl,
-			formatPearl(cumulativePearl),
-			cumulativePercent,
-		)
-
-		// Verify subsidy decreases (except for first block)
-		if previousSubsidy != -1 && subsidy >= previousSubsidy {
-			t.Errorf("Height %d: subsidy should decrease, but got %d >= previous %d", height, subsidy, previousSubsidy)
+		if subsidy > previousSubsidy {
+			t.Errorf("Height %d: phase-2 subsidy should not increase, got %d > previous %d", height, subsidy, previousSubsidy)
 		}
 		previousSubsidy = subsidy
 	}
 
-	// Test key milestones
-	fmt.Println("\n=== Key Milestones (Absolute Amounts) ===")
-	fmt.Printf("%-12s %-22s %-27s %-15s\n", "Height", "Subsidy (Pearl)", "Cumulative (Pearl)", "Cumulative %")
-	fmt.Println("------------------------------------------------------------------------------------")
-
+	// Milestones never increase either.
 	milestones := []int32{1000, 10000, 100000, 650226, 1300452, 1950678, 3251130}
 	previousSubsidy = -1
-
 	for _, height := range milestones {
 		subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-		subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
-		cumulativePercent := float64(height) / float64(int64(height)+defaultEmissionConstant) * 100
-		cumulativeTokens := calculateCumulativeSupply(height)
-		cumulativePearl := float64(cumulativeTokens) / float64(btcutil.GrainPerPearl)
-
-		fmt.Printf("%-12d %-22.2f %-27s %-15.2f%%\n",
-			height,
-			subsidyPearl,
-			formatPearl(cumulativePearl),
-			cumulativePercent,
-		)
-
-		// Verify subsidy decreases at milestones too
-		if previousSubsidy != -1 && subsidy >= previousSubsidy {
-			t.Errorf("Height %d: subsidy should decrease, but got %d >= previous %d", height, subsidy, previousSubsidy)
+		if previousSubsidy != -1 && subsidy > previousSubsidy {
+			t.Errorf("Height %d: subsidy should not increase, got %d > previous %d", height, subsidy, previousSubsidy)
 		}
 		previousSubsidy = subsidy
 	}
@@ -155,75 +98,81 @@ func TestGenesisBlock(t *testing.T) {
 }
 
 func Test50PercentAtEmissionConstant(t *testing.T) {
-	height := int32(650226)
-	subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
+	// With the inference-block offset, the standard curve's 50% point (E curve-blocks) lands at
+	// actual height E − inferencePhase2Offset.
+	height := int32(defaultEmissionConstant - inferencePhase2Offset)
 	cumulativeSupply := calculateCumulativeSupply(height)
 
-	totalSupplyValue := int64(2100000000) * int64(btcutil.GrainPerPearl)
-
+	totalSupplyValue := totalSupply
 	percentage := float64(cumulativeSupply) / float64(totalSupplyValue) * 100
+	cumulativePearl := float64(cumulativeSupply) / float64(btcutil.GrainPerMDL)
 
-	subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
-	cumulativePearl := float64(cumulativeSupply) / float64(btcutil.GrainPerPearl)
-
-	fmt.Printf("\n=== At Emission Constant (Height %d) ===\n", height)
-	fmt.Printf("Block subsidy:         %.2f Pearl\n", subsidyPearl)
+	fmt.Printf("\n=== 50%% point (Height %d) ===\n", height)
 	fmt.Printf("Cumulative supply:     %s\n", formatPearl(cumulativePearl))
-	fmt.Printf("Percentage:            %.2f%%\n", percentage)
-	fmt.Printf("Expected percentage:   50.00%%\n")
+	fmt.Printf("Percentage:            %.4f%%\n", percentage)
 
-	if percentage < 49.99 || percentage > 50.01 {
+	if percentage < 49.9 || percentage > 50.1 {
 		t.Errorf("At height %d, expected ~50%% circulating, got %.4f%%", height, percentage)
 	}
-
-	expectedCumulative := 1.05e9
-	if cumulativePearl < expectedCumulative*0.999 || cumulativePearl > expectedCumulative*1.001 {
-		t.Errorf("At height %d, expected ~1.05 billion Pearl, got %.2f billion",
-			height, cumulativePearl/1e9)
+	if cumulativePearl < 1.05e7*0.999 || cumulativePearl > 1.05e7*1.001 {
+		t.Errorf("At height %d, expected ~10.5 million MDL, got %.4f million",
+			height, cumulativePearl/1e6)
 	}
 }
 
+// curveCumulative returns the standard-curve cumulative supply at curve-height n:
+// totalSupply × n / (n + defaultEmissionConstant).
+func curveCumulative(n int64) int64 {
+	if n <= 0 {
+		return 0
+	}
+	numerator := new(big.Int).Mul(big.NewInt(totalSupply), big.NewInt(n))
+	denominator := big.NewInt(n + defaultEmissionConstant)
+	return new(big.Int).Div(numerator, denominator).Int64()
+}
+
+// calculateCumulativeSupply reflects the piecewise (inference-block) schedule:
+// flat reward for the first inferenceBlocks blocks, then the standard curve resumed at the
+// inferencePhase2Offset so the 21M total is preserved.
 func calculateCumulativeSupply(height int32) int64 {
 	if height == 0 {
 		return 0
 	}
-
-	h := int64(height)
-
-	// Cumulative supply = totalSupply × h / (h + defaultEmissionConstant)
-	totalSupplyValue := big.NewInt(totalSupply)
-
-	numerator := new(big.Int).Mul(totalSupplyValue, big.NewInt(h))
-	denominator := big.NewInt(h + defaultEmissionConstant)
-
-	cumulative := new(big.Int).Div(numerator, denominator)
-
-	return cumulative.Int64()
+	if height <= inferenceBlocks {
+		return int64(height) * inferenceRewardGrains
+	}
+	phase1 := int64(inferenceBlocks) * inferenceRewardGrains
+	boundary := int64(inferenceBlocks) + inferencePhase2Offset
+	phase2 := curveCumulative(int64(height)+inferencePhase2Offset) - curveCumulative(boundary)
+	return phase1 + phase2
 }
 
-// TestCumulativeSupplyFormula verifies the cumulative supply matches the formula
+// TestCumulativeSupplyFormula verifies the cumulative-supply helper matches the actual
+// block-by-block sum of CalcBlockSubsidy under the piecewise schedule.
 func TestCumulativeSupplyFormula(t *testing.T) {
-	testHeights := []int32{1, 100, 1000, 10000, 650226, 1300452, 3000000}
+	testHeights := []int32{1, 100, inferenceBlocks, inferenceBlocks + 1, 1000, 10000}
 
-	fmt.Println("\n=== Cumulative Supply Verification ===")
-	fmt.Printf("%-15s %-20s %-20s\n", "Height", "Formula %", "Actual %")
+	fmt.Println("\n=== Cumulative Supply Verification (helper vs summed) ===")
+	fmt.Printf("%-15s %-22s %-22s\n", "Height", "Helper (MDL)", "Summed (MDL)")
 	fmt.Println("------------------------------------------------------------")
 
+	tol := int64(btcutil.GrainPerMDL) // within 1 MDL (closed-form tail vs summed integer rounding)
 	for _, height := range testHeights {
-		// Expected from formula
-		expectedPercent := float64(height) / float64(int64(height)+defaultEmissionConstant) * 100
+		var summed int64
+		for h := int32(1); h <= height; h++ {
+			summed += CalcBlockSubsidy(h, &chaincfg.MainNetParams)
+		}
+		helper := calculateCumulativeSupply(height)
 
-		// Actual cumulative supply
-		cumulative := calculateCumulativeSupply(height)
-		totalSupplyValue := int64(2100000000) * int64(btcutil.GrainPerPearl)
-		actualPercent := float64(cumulative) / float64(totalSupplyValue) * 100
+		fmt.Printf("%-15d %-22.4f %-22.4f\n",
+			height, float64(helper)/float64(btcutil.GrainPerMDL), float64(summed)/float64(btcutil.GrainPerMDL))
 
-		fmt.Printf("%-15d %-20.6f%% %-20.6f%%\n", height, expectedPercent, actualPercent)
-
-		// Should match very closely (within 0.0001% due to rounding)
-		diff := expectedPercent - actualPercent
-		if diff < -0.0001 || diff > 0.0001 {
-			t.Errorf("Height %d: formula %.6f%% doesn't match actual %.6f%%", height, expectedPercent, actualPercent)
+		diff := helper - summed
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff > tol {
+			t.Errorf("Height %d: helper %d != summed %d (diff %d grains)", height, helper, summed, diff)
 		}
 	}
 }
@@ -242,7 +191,7 @@ func TestGrainPrecision(t *testing.T) {
 
 	for _, height := range testHeights {
 		subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-		formatPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+		formatPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("%-15d %-25d %-20.8f\n", height, subsidy, formatPearl)
 
@@ -265,7 +214,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 	// For a rough estimate, when h is very large: h² ≈ totalSupply × emissionConstant
 	// h ≈ sqrt(totalSupply × emissionConstant)
 
-	totalSupplyValue := int64(2100000000) * int64(btcutil.GrainPerPearl)
+	totalSupplyValue := int64(21000000) * int64(btcutil.GrainPerMDL)
 	emissionConstValue := defaultEmissionConstant
 
 	// Approximate starting point (limited to int32 max)
@@ -315,7 +264,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 				continue
 			}
 			subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 
 			marker := ""
 			if subsidy > 0 && CalcBlockSubsidy(height+1, &chaincfg.MainNetParams) == 0 {
@@ -330,7 +279,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 		// Calculate what percentage this represents
 		percentage := float64(lastNonZeroHeight) / float64(int64(lastNonZeroHeight)+defaultEmissionConstant) * 100
 		cumulative := calculateCumulativeSupply(lastNonZeroHeight)
-		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerPearl)
+		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("\nLast non-zero subsidy at height: %d\n", lastNonZeroHeight)
 		fmt.Printf("Circulating supply at that point: %s (%.6f%%)\n",
@@ -338,7 +287,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 
 		// Calculate remaining supply that will never be mined
 		remainingSupply := totalSupplyValue - cumulative
-		remainingPearl := float64(remainingSupply) / float64(btcutil.GrainPerPearl)
+		remainingPearl := float64(remainingSupply) / float64(btcutil.GrainPerMDL)
 		remainingPercent := float64(remainingSupply) / float64(totalSupplyValue) * 100
 
 		fmt.Printf("Supply that will never be mined: %s (%.6f%%)\n",
@@ -371,7 +320,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 				continue
 			}
 			subsidy := CalcBlockSubsidy(height, &chaincfg.MainNetParams)
-			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerPearl)
+			subsidyPearl := float64(subsidy) / float64(btcutil.GrainPerMDL)
 
 			fmt.Printf("%-15d %-25d %-20.8f\n", height, subsidy, subsidyPearl)
 		}
@@ -379,7 +328,7 @@ func TestSubsidyBecomesZero(t *testing.T) {
 		// Calculate what percentage this represents
 		percentage := float64(lastNonZeroHeight) / float64(int64(lastNonZeroHeight)+defaultEmissionConstant) * 100
 		cumulative := calculateCumulativeSupply(lastNonZeroHeight)
-		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerPearl)
+		cumulativePearl := float64(cumulative) / float64(btcutil.GrainPerMDL)
 
 		fmt.Printf("\nAt int32 max height: %d\n", lastNonZeroHeight)
 		fmt.Printf("Circulating supply: %s (%.6f%%)\n",

@@ -135,14 +135,14 @@ export default function ActivityPage({ onBack }: ActivityPageProps) {
                         }`}
                     >
                       {activity.type === 'received' ? '+' : '-'}
-                      {activity.amount} PRL
+                      {activity.amount} MDL
                     </div>
                     <div className="text-sm text-gray-600">
                       {activity.confirmations} confirmations
                     </div>
                     {activity.fee > 0 && (
                       <div className="text-xs text-gray-500">
-                        Fee: {activity.fee.toFixed(8)} PRL
+                        Fee: {activity.fee.toFixed(8)} MDL
                       </div>
                     )}
                   </div>

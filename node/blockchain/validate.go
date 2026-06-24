@@ -12,12 +12,13 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/node/zkpow"
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/node/zkpow"
 )
 
 const (
@@ -39,14 +40,21 @@ const (
 	// coinbases to start with the serialized block height.
 	serializedHeightVersion = 2
 
-	// totalSupply is the maximum supply of tokens 2 billion and 100 million.
-	// Emission follows the formula: height / (height + emissionConstant) for cumulative supply.
-	totalSupply = 2100000000 * btcutil.GrainPerPearl
+	// totalSupply is the maximum supply of MDL tokens: 21,000,000 MDL.
+	// Scaled 1/100 from Pearl's 2.1B PRL — same block-reward curve, 100× smaller supply.
+	// Genesis block reward ≈ 32.3 MDL, decaying polynomially toward zero.
+	totalSupply = 21_000_000 * btcutil.GrainPerMDL
 
 	// defaultEmissionConstant is the default emission constant used when chainParams is nil.
 	// This represents 4 years of blocks at 3 minutes and 14 seconds per block:
 	// (1440 minutes/day) / (3 minutes and 14 seconds/block) * 365 days * 4 years = 650,226 blocks
 	defaultEmissionConstant = int64(650226)
+
+	// Inference blocks: first inferenceBlocks blocks pay a flat reward, then the standard curve
+	// resumes offset so total supply stays 21,000,000.
+	inferenceBlocks       = int32(240)
+	inferenceRewardGrains = int64(2_500) * btcutil.GrainPerMDL
+	inferencePhase2Offset = int64(18_884)
 
 	// coinbaseHeightAllocSize is the amount of bytes that the
 	// ScriptBuilder will allocate when validating the coinbase height.
@@ -163,6 +171,11 @@ func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 		return 0
 	}
 
+	// Inference blocks: flat reward for the first inferenceBlocks blocks.
+	if height <= inferenceBlocks {
+		return inferenceRewardGrains
+	}
+
 	var emissionConstant int64
 	if chainParams != nil && chainParams.TargetTimePerBlock > 0 {
 		targetTimePerBlockSeconds := int64(chainParams.TargetTimePerBlock / time.Second)
@@ -172,7 +185,7 @@ func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 		emissionConstant = defaultEmissionConstant
 	}
 
-	h := int64(height)
+	h := int64(height) + inferencePhase2Offset
 
 	numerator := new(big.Int).Mul(
 		big.NewInt(totalSupply),
@@ -191,7 +204,11 @@ func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 
 // CheckTransactionSanity performs some preliminary checks on a transaction to
 // ensure it is sane.  These checks are context free.
-func CheckTransactionSanity(tx *btcutil.Tx) error {
+//
+// allowInferenceTx must be true only for the modelOS mainnet; all other
+// networks (testnet, signet/Pearl) must pass false.  When false, version-3
+// inference_tx and version-4 inference_proof_tx are rejected as unsupported.
+func CheckTransactionSanity(tx *btcutil.Tx, allowInferenceTx bool) error {
 	// A transaction must have at least one input.
 	msgTx := tx.MsgTx()
 	if len(msgTx.TxIn) == 0 {
@@ -216,7 +233,7 @@ func CheckTransactionSanity(tx *btcutil.Tx) error {
 	// transaction.  Also, the total of all outputs must abide by the same
 	// restrictions.  All amounts in a transaction are in a unit value known
 	// as a grain.  One pearl is a quantity of grain as defined by the
-	// GrainPerPearl constant.
+	// GrainPerMDL constant.
 	//
 	// Additionally, ensure all outputs use one of Pearl's supported script
 	// types: Taproot (P2TR), Pay-to-Merkle-Root (P2MR, BIP 360), or
@@ -228,9 +245,17 @@ func CheckTransactionSanity(tx *btcutil.Tx) error {
 		if scriptClass != txscript.WitnessV1TaprootTy &&
 			scriptClass != txscript.WitnessV2MerkleRootTy &&
 			scriptClass != txscript.NullDataTy {
-			str := fmt.Sprintf("transaction output %d has "+
-				"unsupported script type %v", i, scriptClass)
-			return ruleError(ErrScriptMalformed, str)
+			// The inference bounty covenant (TxOut[0] of a version-3 inference_tx) is an
+			// OP_PUSHDATA1-framed "mdlb" blob that GetScriptClass reports as non-standard. It is a
+			// first-class modelOS output type — its spends (worker claim / requester refund) are
+			// validated by the dedicated covenant rules (checkInferenceBountySpends). Permit it as
+			// a consensus-valid output, but only when inference txs are enabled (modelOS mainnet)
+			// and the script is a well-formed bounty covenant; everything else stays rejected.
+			if !(allowInferenceTx && IsInferenceBountyScript(txOut.PkScript)) {
+				str := fmt.Sprintf("transaction output %d has "+
+					"unsupported script type %v", i, scriptClass)
+				return ruleError(ErrScriptMalformed, str)
+			}
 		}
 
 		grain := txOut.Value
@@ -262,6 +287,96 @@ func CheckTransactionSanity(tx *btcutil.Tx) error {
 				"allowed value of %v", totalGrain,
 				btcutil.MaxGrain)
 			return ruleError(ErrBadTxOutValue, str)
+		}
+	}
+
+	// Enforce inference_tx / inference_proof_tx rules — modelOS mainnet only.
+	if msgTx.Version == wire.TxVersionInference || msgTx.Version == wire.TxVersionInferenceProof {
+		if !allowInferenceTx {
+			str := fmt.Sprintf("transaction version %d (inference) is not "+
+				"supported on this network", msgTx.Version)
+			return ruleError(ErrBadTxOutValue, str)
+		}
+	}
+	if allowInferenceTx {
+		// Enforce inference_tx rules (transaction version 3).
+		// Open inference market: any GPU worker may respond — not just the block winner.
+		if msgTx.Version == wire.TxVersionInference {
+			// Must have at least one fee output (index 0, grains locked for the worker).
+			if len(msgTx.TxOut) < 1 {
+				return ruleError(ErrNoTxOutputs, "inference_tx has no fee output")
+			}
+			if msgTx.TxOut[0].Value < btcutil.MinInferenceFeeGrains {
+				str := fmt.Sprintf("inference_tx fee output %d grains is below "+
+					"minimum %d grains (0.01 MDL); increase fee for faster inclusion",
+					msgTx.TxOut[0].Value, btcutil.MinInferenceFeeGrains)
+				return ruleError(ErrBadTxOutValue, str)
+			}
+			// Enforce the max_tokens FORMAT ceiling (wire.MaxInferenceTokens =
+			// uint16 max). Consensus only bounds what the wire field can hold;
+			// per-model operational caps (context window, GPU speed, proof window)
+			// live in the application layer so new models don't need a fork. With
+			// the cap at the uint16 max this guard can't fail for a well-formed
+			// payload — kept so a future lower cap re-engages it without code churn.
+			payload, err := wire.ExtractInferencePayload(msgTx)
+			if err == nil && payload.MaxTokens > wire.MaxInferenceTokens {
+				str := fmt.Sprintf("inference_tx max_tokens %d exceeds consensus "+
+					"limit %d; reduce max_tokens",
+					payload.MaxTokens, wire.MaxInferenceTokens)
+				return ruleError(ErrBadTxOutValue, str)
+			}
+		}
+
+		// Enforce inference_proof_tx rules (transaction version 4).
+		// Any worker may submit a proof; first confirmed proof claims the inference fee.
+		if msgTx.Version == wire.TxVersionInferenceProof {
+			if !wire.IsInferenceProofTx(msgTx) {
+				return ruleError(ErrBadTxOutValue,
+					"inference_proof_tx missing valid InferenceResultProof OP_RETURN output")
+			}
+			// Verify the BIP-340 Schnorr signature over the commitment hash.
+			// CommitmentHash = SHA3-256(PromptHash || ResultHash || WorkerAddress || BlockHash || Nonce_LE8 || ModelVersion_LE2)
+			// Nonce (from the original InferencePayload) is the vLLM sampling seed,
+			// binding the proof to an inference run with that exact model and seed.
+			// ModelVersion is included so a miner cannot substitute a different model tier.
+			// The x-only public key is embedded in WorkerAddress (P2TR: OP_1 0x20 <32 bytes>).
+			proof, err := wire.ExtractInferenceResultProof(msgTx)
+			if err != nil {
+				return ruleError(ErrBadTxOutValue,
+					"inference_proof_tx: cannot extract InferenceResultProof")
+			}
+			// WorkerAddress must be a valid P2TR: 34 bytes, starts with OP_1 (0x51) 0x20.
+			if len(proof.WorkerAddress) != 34 ||
+				proof.WorkerAddress[0] != 0x51 ||
+				proof.WorkerAddress[1] != 0x20 {
+				return ruleError(ErrBadTxOutValue,
+					"inference_proof_tx: WorkerAddress is not a valid P2TR scriptPubKey")
+			}
+			pubKey, err := schnorr.ParsePubKey(proof.WorkerAddress[2:34])
+			if err != nil {
+				return ruleError(ErrBadTxOutValue,
+					"inference_proof_tx: invalid x-only pubkey in WorkerAddress")
+			}
+			sig, err := schnorr.ParseSignature(proof.Signature[:])
+			if err != nil {
+				return ruleError(ErrBadTxOutValue,
+					"inference_proof_tx: cannot parse Schnorr signature")
+			}
+			if !sig.Verify(proof.CommitmentHash[:], pubKey) {
+				return ruleError(ErrBadTxOutValue,
+					"inference_proof_tx: Schnorr signature does not verify against CommitmentHash")
+			}
+
+			// Marketplace v1: the proof also carries the COORDINATOR's BIP-340
+			// attestation over the same CommitmentHash. Statelessly we can only
+			// confirm it is a well-formed Schnorr signature — verifying it against
+			// the correct key requires the original inference_tx's CoordinatorPubKey,
+			// which is enforced by the bounty covenant when TxOut[0] is spent (the
+			// stateful layer). Reject obviously malformed attestations early here.
+			if _, err := schnorr.ParseSignature(proof.CoordinatorSignature[:]); err != nil {
+				return ruleError(ErrBadTxOutValue,
+					"inference_proof_tx: cannot parse coordinator Schnorr attestation")
+			}
 		}
 	}
 
@@ -322,6 +437,13 @@ func checkProofOfWork(header *wire.BlockHeader, cert wire.BlockCertificate, powL
 		return ruleError(ErrUnexpectedDifficulty, str)
 	}
 
+	// AuxPoW blocks (version & 0x1101 == 0x1101) carry no local ZK certificate.
+	// Their proof-of-work is established by VerifyAuxPow via the referenced
+	// Pearl block.  Skip certificate checks entirely for AuxPoW blocks.
+	if wire.IsAuxPowBlock(header) {
+		return nil
+	}
+
 	if cert == nil {
 		return ruleError(ErrCertificateMissing, "certificate is missing")
 	}
@@ -356,24 +478,34 @@ func CheckProofOfWork(block *btcutil.Block, powLimit *big.Int) error {
 func CheckBlockHeaderSanity(header *wire.BlockHeader, cert wire.BlockCertificate, powLimit *big.Int,
 	timeSource MedianTimeSource, maxTimeOffsetMinutes int64, flags BehaviorFlags) error {
 
-	// A block must have a certificate.
+	// A block must have a certificate — EXCEPT AuxPoW blocks, whose proof-of-work is the
+	// embedded Pearl ZK proof (verified by VerifyAuxPow), NOT a native ZK certificate.
+	// AuxPoW blocks legitimately carry CertificateVersionNull, which decodes to a nil cert
+	// (MsgCertificate.PrlDecode), so they must be exempted from the existence + size checks
+	// below — exactly as the version check already exempts them. Without this exemption the
+	// nil-cert guard rejects every AuxPoW block with "block has no certificate".
+	isAuxPow := wire.IsAuxPowBlock(header)
 	if cert == nil {
-		return ruleError(ErrCertificateMissing, "block has no certificate")
-	}
+		if !isAuxPow {
+			return ruleError(ErrCertificateMissing, "block has no certificate")
+		}
+		// AuxPoW: null cert is valid; PoW is checked by VerifyAuxPow. Skip cert size/version.
+	} else {
+		// Verify certificate is not too large (4 bytes for version + certificate payload).
+		certSize := 4 + cert.SerializedSize()
+		if certSize > wire.CertificateMaxSize {
+			str := fmt.Sprintf("certificate too large: %d bytes (max %d)",
+				certSize, wire.CertificateMaxSize)
+			return ruleError(ErrCertificateTooLarge, str)
+		}
 
-	// Verify certificate is not too large (4 bytes for version + certificate payload).
-	certSize := 4 + cert.SerializedSize()
-	if certSize > wire.CertificateMaxSize {
-		str := fmt.Sprintf("certificate too large: %d bytes (max %d)",
-			certSize, wire.CertificateMaxSize)
-		return ruleError(ErrCertificateTooLarge, str)
-	}
-
-	// Check that the certificate version is allowed.
-	if !wire.IsCertVersionAllowed(cert.Version()) {
-		str := fmt.Sprintf("certificate version %d is not allowed",
-			cert.Version())
-		return ruleError(ErrDisallowedCertVersion, str)
+		// Check that the certificate version is allowed. AuxPoW blocks (handled above,
+		// null cert) are exempt — their PoW is the embedded Pearl proof.
+		if !isAuxPow && !wire.IsCertVersionAllowed(cert.Version()) {
+			str := fmt.Sprintf("certificate version %d is not allowed",
+				cert.Version())
+			return ruleError(ErrDisallowedCertVersion, str)
+		}
 	}
 
 	// A block timestamp must not have a greater precision than one second.
@@ -427,6 +559,33 @@ func checkBlockSanity(block *btcutil.Block, chainParams *chaincfg.Params, timeSo
 		return err
 	}
 
+	// AuxPoW blocks (version & 0x1101 == 0x1101) must carry AuxPowData.
+	if wire.IsAuxPowBlock(header) {
+		if msgBlock.AuxPow == nil {
+			return ruleError(ErrBadAuxPoW,
+				"AuxPoW block (version 0x1101) is missing AuxPowData")
+		}
+		// header.ProofCommitment must equal
+		//   SHA256d(networkMagic_LE4 || CertVersionNull_LE4 || AuxPowData).
+		// The network magic acts as a domain separator preventing AuxPoW proofs
+		// from being replayed across mainnet, testnet, and forks.
+		expected, err := wire.AuxPowProofCommitment(msgBlock.AuxPow, chainParams.Net)
+		if err != nil {
+			return ruleError(ErrBadAuxPoW,
+				"AuxPoW block ProofCommitment could not be computed: "+err.Error())
+		}
+		if header.ProofCommitment != expected {
+			return ruleError(ErrBadAuxPoW,
+				"AuxPoW block ProofCommitment does not match AuxPowData "+
+					"(wrong network, tampered proof, or incorrect serialisation)")
+		}
+	}
+	// Non-AuxPoW blocks must NOT carry AuxPowData.
+	if !wire.IsAuxPowBlock(header) && msgBlock.AuxPow != nil {
+		return ruleError(ErrBadAuxPoW,
+			"non-AuxPoW block carries unexpected AuxPowData")
+	}
+
 	// A block must have at least one transaction.
 	numTx := len(msgBlock.Transactions)
 	if numTx == 0 {
@@ -468,8 +627,9 @@ func checkBlockSanity(block *btcutil.Block, chainParams *chaincfg.Params, timeSo
 
 	// Do some preliminary checks on each transaction to ensure they are
 	// sane before continuing.
+	allowInferenceTx := chainParams.MaxSupportedTxVersion >= wire.TxVersionInference
 	for _, tx := range transactions {
-		err := CheckTransactionSanity(tx)
+		err := CheckTransactionSanity(tx, allowInferenceTx)
 		if err != nil {
 			return err
 		}
@@ -502,6 +662,11 @@ func checkBlockSanity(block *btcutil.Block, chainParams *chaincfg.Params, timeSo
 		}
 		existingTxHashes[*hash] = struct{}{}
 	}
+
+	// NOTE: there is intentionally NO per-block cap on inference_tx (v3) or proof/claim (v4) count.
+	// A block may carry as many as fit under the standard block-vsize limit. (A prior rule capped v3 at
+	// 5/block; it deadlocked mining when the mempool held >5 — the template builder couldn't produce a
+	// valid block, so nothing confirmed and the surplus never drained. Removed.)
 
 	return nil
 }
@@ -709,6 +874,24 @@ func (b *BlockChain) checkBlockContext(block *btcutil.Block, prevNode *blockNode
 		// previous block.
 		blockHeight := prevNode.height + 1
 
+		// For AuxPoW blocks, verify the AuxPowData now that we have the block
+		// height.  PearlHeader carries the full Pearl block header, so all
+		// checks (Pearl PoW, difficulty scaling, coinbase commitment, and
+		// coinbase Merkle branch) are performed immediately — no deferral.
+		if wire.IsAuxPowBlock(header) {
+			modelOSTarget := CompactToBig(header.Bits)
+			stateHash := header.PrevBlock // σ_modelos (little-endian prevBlock hash)
+			if err := VerifyAuxPow(
+				block.MsgBlock().AuxPow,
+				blockHeight,
+				&stateHash,
+				modelOSTarget,
+				b.chainParams.Net,
+			); err != nil {
+				return ruleError(ErrBadAuxPoW, err.Error())
+			}
+		}
+
 		// Ensure all transactions in the block are finalized.
 		for _, tx := range block.Transactions() {
 			if !IsFinalizedTransaction(tx, blockHeight,
@@ -844,7 +1027,7 @@ func CheckTransactionInputs(tx *btcutil.Tx, txHeight int32, utxoView *UtxoViewpo
 		// or more than the max allowed per transaction.  All amounts in
 		// a transaction are in a unit value known as a grain.  One
 		// pearl is a quantity of grain as defined by the
-		// GrainPerPearl constant.
+		// GrainPerMDL constant.
 		originTxGrain := utxo.Amount()
 		if originTxGrain < 0 {
 			str := fmt.Sprintf("transaction output has negative "+
@@ -968,6 +1151,14 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *btcutil.Block, vi
 		txFee, err := CheckTransactionInputs(tx, node.height, view,
 			b.chainParams)
 		if err != nil {
+			return err
+		}
+
+		// Enforce the inference bounty covenant for any input that spends an
+		// inference_tx's TxOut[0]. Must run BEFORE connectTransaction marks the
+		// inputs spent, while the bounty entry (its covenant params + confirm
+		// height) is still resolvable from the view.
+		if err := b.checkInferenceBountySpends(tx, node, view); err != nil {
 			return err
 		}
 

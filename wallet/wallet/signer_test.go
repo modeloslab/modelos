@@ -7,10 +7,10 @@ package wallet
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/waddrmgr"
 	"github.com/stretchr/testify/require"
 )
 

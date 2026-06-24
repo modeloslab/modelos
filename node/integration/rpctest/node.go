@@ -13,8 +13,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	rpc "github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/btcutil"
+	rpc "github.com/modelos/modelos/node/rpcclient"
 )
 
 // nodeConfig contains all the args, and data required to launch a pearld process
@@ -43,14 +43,14 @@ type nodeConfig struct {
 func newConfig(nodeDir, certFile, keyFile string, extra []string,
 	customExePath string) (*nodeConfig, error) {
 
-	var pearldPath string
+	var modelosPath string
 	if customExePath != "" {
-		pearldPath = customExePath
+		modelosPath = customExePath
 	} else {
 		var err error
-		pearldPath, err = pearldExecutablePath()
+		modelosPath, err = modelosExecutablePath()
 		if err != nil {
-			pearldPath = "pearld"
+			modelosPath = "modelosd"
 		}
 	}
 
@@ -61,7 +61,7 @@ func newConfig(nodeDir, certFile, keyFile string, extra []string,
 		rpcPass:   "pass",
 		extra:     extra,
 		nodeDir:   nodeDir,
-		exe:       pearldPath,
+		exe:       modelosPath,
 		endpoint:  "ws",
 		certFile:  certFile,
 		keyFile:   keyFile,
@@ -189,7 +189,7 @@ func (n *node) start() error {
 		return err
 	}
 
-	pid, err := os.Create(filepath.Join(n.dataDir, "pearld.pid"))
+	pid, err := os.Create(filepath.Join(n.dataDir, "modelosd.pid"))
 	if err != nil {
 		return err
 	}

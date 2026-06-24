@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // These variables are the chain proof-of-work limit parameters for each default
@@ -65,6 +65,10 @@ const (
 	// HDCoinTypePearl is the BIP-44 coin type for Pearl mainnet.
 	// Derived from ASCII "PRL": 808276 (0xC5554).
 	HDCoinTypePearl = 808276
+
+	// HDCoinTypeModelOS is the BIP-44 coin type for modelOS mainnet.
+	// Derived from ASCII "MDL": 778572 (0xBE14C).
+	HDCoinTypeModelOS = 778572
 
 	// HDCoinTypeTestnet is the BIP-44 coin type for all testnets per SLIP-44.
 	HDCoinTypeTestnet = 1
@@ -224,6 +228,12 @@ type Params struct {
 	// GenerateSupported specifies whether or not CPU mining is allowed.
 	GenerateSupported bool
 
+	// MaxSupportedTxVersion is the highest transaction version accepted by
+	// this network's mempool and considered valid by block-sanity checks.
+	// modelOS mainnet: 4 (inference_tx v3 + inference_proof_tx v4).
+	// All other networks default to 2 — they have no inference feature.
+	MaxSupportedTxVersion int32
+
 	// MaxTimeOffsetMinutes is the maximum number of minutes a block timestamp
 	// is allowed to be ahead of the current time. This prevents blocks with
 	// timestamps too far in the future.
@@ -268,15 +278,14 @@ type Params struct {
 	HDCoinType uint32
 }
 
-// MainNetParams defines the network parameters for the main Pearl network.
+// MainNetParams defines the network parameters for the main modelOS network.
 var MainNetParams = Params{
 	Name:        "mainnet",
 	Net:         wire.MainNet,
-	DefaultPort: "44108",
+	DefaultPort: "44208",
 	DNSSeeds: []DNSSeed{
-		{"seeder1.pearlresearch.ai", false},
-		{"seeder2.pearlresearch.ai", false},
-		{"seeder3.pearlresearch.ai", false},
+		{"seeder1.modeloslab.xyz", false},
+		{"seeder2.modeloslab.xyz", false},
 	},
 
 	// Chain parameters
@@ -284,18 +293,24 @@ var MainNetParams = Params{
 	GenesisHash:          &genesisHash,
 	PowLimit:             mainPowLimit,
 	PowLimitBits:         0x1b00ffff,
+	// Production value: a freshly mined coinbase is spendable only after 100 confirmations.
+	// This is a consensus rule: every node on the network MUST run this exact value or fork.
 	CoinbaseMaturity:     100,
 	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
 	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
 	ReduceMinDifficulty:  false,                                  // not supported on mainnet, will panic if set to true on difficulty calculation.
 	MinDiffReductionTime: 0,
 	GenerateSupported:    false,
-	MaxTimeOffsetMinutes: 5,
+	// inference_tx (v3) and inference_proof_tx (v4) are modelOS mainnet-only.
+	MaxSupportedTxVersion: 4,
+	MaxTimeOffsetMinutes:  5,
 
 	// Checkpoints ordered from oldest to newest.
-	Checkpoints: []Checkpoint{
-		{50000, newHashFromStr("608f32e5390b2ae964c986a53e1be10ba4a640f3ccecf96d6b7838e06cb517ff")},
-	},
+	// Empty for the fresh-genesis launch: a checkpoint above the current tip
+	// makes isCurrent() return false (tip.height < checkpoint.Height) → the node
+	// stays in IBD and getblocktemplate is refused past block 1.  Re-add real
+	// checkpoints only once the chain has meaningful height.
+	Checkpoints: nil,
 
 	// Consensus rule change deployments.
 	//
@@ -341,7 +356,7 @@ var MainNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "prl", // always prl for main net
+	Bech32HRPSegwit: "mdl", // always mdl for main net — produces mdl1p... Taproot addresses
 
 	// Address encoding magics
 	PrivateKeyID: 0x80, // starts with 5 (uncompressed) or K (compressed)
@@ -353,7 +368,7 @@ var MainNetParams = Params{
 
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
-	HDCoinType: HDCoinTypePearl,
+	HDCoinType: HDCoinTypeModelOS,
 }
 
 // RegressionNetParams defines the network parameters for the regression test
@@ -375,10 +390,11 @@ var RegressionNetParams = Params{
 	CoinbaseMaturity:     100,
 	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
 	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
-	ReduceMinDifficulty:  true,
-	MinDiffReductionTime: (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
-	GenerateSupported:    true,
-	MaxTimeOffsetMinutes: 120, // 2 hours for regtest
+	ReduceMinDifficulty:   true,
+	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
+	GenerateSupported:     true,
+	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxTimeOffsetMinutes:  120, // 2 hours for regtest
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
@@ -427,7 +443,7 @@ var RegressionNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "rprl", // always rprl for reg test net
+	Bech32HRPSegwit: "rmdl", // always rmdl for reg test net
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -447,11 +463,11 @@ var RegressionNetParams = Params{
 var TestNetParams = Params{
 	Name:        "testnet",
 	Net:         wire.TestNet,
-	DefaultPort: "44110",
+	DefaultPort: "44210",
 	DNSSeeds: []DNSSeed{
-		{"seeder1.internal.pearlresearch.ai", true},
-		{"seeder2.internal.pearlresearch.ai", true},
-		{"seeder3.internal.pearlresearch.ai", true},
+		{"testnet-seeder1.modeloslab.xyz", false},
+		{"testnet-seeder2.modeloslab.xyz", false},
+		{"testnet-seeder3.modeloslab.xyz", false},
 	},
 
 	// Chain parameters
@@ -465,7 +481,8 @@ var TestNetParams = Params{
 	ReduceMinDifficulty:  true,
 	MinDiffReductionTime: time.Hour * 4, // 4 hours
 	GenerateSupported:    false,
-	MaxTimeOffsetMinutes: 5,
+	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxTimeOffsetMinutes:  5,
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
@@ -514,7 +531,7 @@ var TestNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "tprl", // always tprl for test net
+	Bech32HRPSegwit: "tmdl", // always tmdl for test net
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -534,11 +551,11 @@ var TestNetParams = Params{
 var TestNet2Params = Params{
 	Name:        "testnet2",
 	Net:         wire.TestNet2,
-	DefaultPort: "44112",
+	DefaultPort: "44212",
 	DNSSeeds: []DNSSeed{
-		{"seeder1.testnet.pearlresearch.ai", true},
-		{"seeder2.testnet.pearlresearch.ai", true},
-		{"seeder3.testnet.pearlresearch.ai", true},
+		{"testnet2-seeder1.modeloslab.xyz", false},
+		{"testnet2-seeder2.modeloslab.xyz", false},
+		{"testnet2-seeder3.modeloslab.xyz", false},
 	},
 
 	// Chain parameters
@@ -552,7 +569,8 @@ var TestNet2Params = Params{
 	ReduceMinDifficulty:  true,
 	MinDiffReductionTime: time.Hour * 4, // 4 hours
 	GenerateSupported:    false,
-	MaxTimeOffsetMinutes: 5,
+	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxTimeOffsetMinutes:  5,
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
@@ -601,7 +619,7 @@ var TestNet2Params = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "tprl", // always tprl for test net
+	Bech32HRPSegwit: "tmdl", // always tmdl for test net
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -639,10 +657,11 @@ var SimNetParams = Params{
 	CoinbaseMaturity:     100,
 	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
 	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
-	ReduceMinDifficulty:  true,
-	MinDiffReductionTime: (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
-	GenerateSupported:    true,
-	MaxTimeOffsetMinutes: 120, // 2 hours for simnet
+	ReduceMinDifficulty:   true,
+	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
+	GenerateSupported:     true,
+	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxTimeOffsetMinutes:  120, // 2 hours for simnet
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
@@ -691,7 +710,7 @@ var SimNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "rprl", // always rprl for sim net
+	Bech32HRPSegwit: "smdl", // always smdl for sim net
 
 	// Address encoding magics
 	PrivateKeyID: 0x64, // starts with 4 (uncompressed) or F (compressed)
@@ -741,10 +760,11 @@ func CustomSignetParams(challenge []byte, dnsSeeds []DNSSeed) Params {
 		CoinbaseMaturity:     100,
 		TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
 		WTEMAHalfLife:        time.Hour * 168,                        // 1 week
-		ReduceMinDifficulty:  false,
-		MinDiffReductionTime: (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
-		GenerateSupported:    false,
-		MaxTimeOffsetMinutes: 5,
+		ReduceMinDifficulty:   false,
+		MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
+		GenerateSupported:     false,
+		MaxSupportedTxVersion: 2, // signet = Pearl's test network; inference_tx is not valid on Pearl
+		MaxTimeOffsetMinutes:  5,
 
 		// Checkpoints ordered from oldest to newest.
 		Checkpoints: nil,

@@ -10,8 +10,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 )
 
 // This example demonstrates creating a new database.
@@ -19,8 +19,8 @@ func ExampleCreate() {
 	// This example assumes the bdb (bolt db) driver is imported.
 	//
 	// import (
-	// 	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	// 	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	// 	"github.com/modelos/modelos/wallet/walletdb"
+	// 	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.
@@ -104,8 +104,8 @@ func Example_basicUsage() {
 	// This example assumes the bdb (bolt db) driver is imported.
 	//
 	// import (
-	// 	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	// 	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	// 	"github.com/modelos/modelos/wallet/walletdb"
+	// 	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.

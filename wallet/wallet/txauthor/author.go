@@ -9,12 +9,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txrules"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txsizes"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/wallet/txrules"
+	"github.com/modelos/modelos/wallet/wallet/txsizes"
 )
 
 // SumOutputValues sums up the list of TxOuts and returns an Amount.

@@ -1,4 +1,4 @@
-import { formatPearlAmount } from '../../lib/crypto';
+import { formatMDLAmount } from '../../lib/crypto';
 import { AlertCircle } from 'lucide-react';
 
 type AmountInputProps = {
@@ -29,13 +29,13 @@ export default function AmountInput({
       <div className="relative">
         <input
           type="number"
-          value={formatPearlAmount(amount)}
+          value={formatMDLAmount(amount)}
           onChange={e => onChange(e.target.value)}
           placeholder="0.00"
           className="focus:border-brand-green focus:ring-brand-green/20 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 shadow-sm [appearance:textfield] focus:outline-none focus:ring-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           step="0.00000001"
           min="0"
-          max={formatPearlAmount(spendableAmount ?? 0)}
+          max={formatMDLAmount(spendableAmount ?? 0)}
         />
       </div>
       {error && (
@@ -45,8 +45,8 @@ export default function AmountInput({
         </div>
       )}
       <div className="text-xs text-neutral-500">
-        Spendable: {formatPearlAmount(spendableAmount ?? 0)} PRL (after{' '}
-        {formatPearlAmount(currentFee)} PRL / kb fee reduction)
+        Spendable: {formatMDLAmount(spendableAmount ?? 0)} MDL (after{' '}
+        {formatMDLAmount(currentFee)} MDL / kb fee reduction)
       </div>
       <div className="mt-3 grid grid-cols-4 gap-2">
         <button

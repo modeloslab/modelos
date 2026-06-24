@@ -10,8 +10,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/wire"
 )
 
 var (

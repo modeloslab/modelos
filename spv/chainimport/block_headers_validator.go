@@ -11,10 +11,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/spv/headerfs"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/spv/headerfs"
 )
 
 // blockHeadersImportSourceValidator implements HeadersValidator for block

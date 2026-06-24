@@ -230,6 +230,15 @@ const (
 	// ErrTimewarpAttack indicates a timewarp attack i.e.
 	// when block's timestamp is too early on diff adjustment block.
 	ErrTimewarpAttack
+
+	// ErrTooManyTransactions indicates a block contains more of a specific
+	// transaction type than the consensus limit allows (e.g. inference_tx).
+	ErrTooManyTransactions
+
+	// ErrBadAuxPoW indicates that an AuxPoW block failed validation:
+	// the AuxPowData is missing, malformed, or does not satisfy the
+	// modelOS difficulty target via Pearl's merged block.
+	ErrBadAuxPoW
 )
 
 // Map of ErrorCode values back to their constant names for pretty printing.
@@ -278,6 +287,8 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrPreviousBlockUnknown:      "ErrPreviousBlockUnknown",
 	ErrInvalidAncestorBlock:      "ErrInvalidAncestorBlock",
 	ErrPrevBlockNotBest:          "ErrPrevBlockNotBest",
+	ErrTooManyTransactions:       "ErrTooManyTransactions",
+	ErrBadAuxPoW:                 "ErrBadAuxPoW",
 }
 
 // String returns the ErrorCode as a human-readable name.

@@ -14,12 +14,12 @@ import (
 	"time"
 
 	"github.com/lightningnetwork/lnd/clock"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 )
 
 // Received transaction output for mainnet outpoint
@@ -2591,12 +2591,12 @@ func TestOutputLocks(t *testing.T) {
 
 	// Create a coinbase transaction with two outputs, which we'll spend.
 	coinbase := newCoinBase(
-		btcutil.GrainPerPearl, btcutil.GrainPerPearl*2,
+		btcutil.GrainPerMDL, btcutil.GrainPerMDL*2,
 	)
 	coinbaseHash := coinbase.TxHash()
 
 	// One of the spends will be unconfirmed.
-	const unconfirmedBalance = btcutil.GrainPerPearl / 2
+	const unconfirmedBalance = btcutil.GrainPerMDL / 2
 	unconfirmedTx := spendOutput(&coinbaseHash, 0, unconfirmedBalance)
 	unconfirmedOutPoint := wire.OutPoint{
 		Hash:  unconfirmedTx.TxHash(),
@@ -2604,7 +2604,7 @@ func TestOutputLocks(t *testing.T) {
 	}
 
 	// The other will be confirmed.
-	const confirmedBalance = btcutil.GrainPerPearl
+	const confirmedBalance = btcutil.GrainPerMDL
 	confirmedTx := spendOutput(&coinbaseHash, 1, confirmedBalance)
 	confirmedOutPoint := wire.OutPoint{
 		Hash:  confirmedTx.TxHash(),

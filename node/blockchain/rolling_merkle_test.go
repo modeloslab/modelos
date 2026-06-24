@@ -3,7 +3,7 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 	"github.com/stretchr/testify/require"
 )
 

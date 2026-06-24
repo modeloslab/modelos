@@ -60,7 +60,7 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.2(react-hook-form@7.69.0)
-      '@pearl/ui':
+      '@modelos/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@radix-ui/react-accordion':

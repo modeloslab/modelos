@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"github.com/lightningnetwork/lnd/tlv"
-	"github.com/pearl-research-labs/pearl/node/btcec/schnorr"
-	"github.com/pearl-research-labs/pearl/node/txscript"
+	"github.com/modelos/modelos/node/btcec/schnorr"
+	"github.com/modelos/modelos/node/txscript"
 )
 
 const (

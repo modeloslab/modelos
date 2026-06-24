@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/blockntfns"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/blockntfns"
 )
 
 var emptyHeader wire.BlockHeader

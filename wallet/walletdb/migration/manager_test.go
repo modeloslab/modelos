@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb/migration"
+	"github.com/modelos/modelos/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/walletdb/migration"
 )
 
 type mockMigrationManager struct {

@@ -13,7 +13,7 @@ import (
 
 	"github.com/aead/siphash"
 	"github.com/kkdai/bstream"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // Inspired by https://github.com/rasky/gcs

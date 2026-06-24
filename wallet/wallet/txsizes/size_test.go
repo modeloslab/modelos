@@ -3,7 +3,7 @@ package txsizes
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 func TestEstimateSerializeSizeTaproot(t *testing.T) {

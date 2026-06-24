@@ -80,6 +80,24 @@ class WalletRpcMethods {
     const validationResult = await this.rpc.call<{ isvalid: boolean }>('validateaddress', [address]);
     return { isValid: validationResult.isvalid };
   }
+
+  // Submit a version-3 inference_tx to the modelOS node.
+  // The wallet RPC constructs the OP_RETURN InferencePayload internally.
+  sendInferenceTx(params: {
+    promptHash: string;       // hex-encoded BLAKE3/SHA3-256 of the prompt
+    resultAddress: string;    // relay URL for result delivery (e.g. http://1.2.3.4:44211)
+    feeGrains: number;        // outputs[0].value — must be >= MinInferenceFeeGrains
+    maxTokens: number;        // consensus maximum: 4096
+    modelVersion?: number;    // 1=DeepSeekR1-70B (default), 2=32B, 3=14B, 4=7B
+  }): Promise<string> {
+    return this.rpc.call<string>('sendinferencetx', [
+      params.promptHash,
+      params.resultAddress,
+      params.feeGrains,
+      params.maxTokens,
+      params.modelVersion ?? 1,
+    ]);
+  }
 }
 
 export { WalletRpcMethods };

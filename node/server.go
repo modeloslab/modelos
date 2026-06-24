@@ -23,23 +23,23 @@ import (
 	"time"
 
 	"github.com/decred/dcrd/lru"
-	"github.com/pearl-research-labs/pearl/node/addrmgr"
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/blockchain/indexers"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/bloom"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/connmgr"
-	"github.com/pearl-research-labs/pearl/node/database"
-	"github.com/pearl-research-labs/pearl/node/mempool"
-	"github.com/pearl-research-labs/pearl/node/mining"
-	"github.com/pearl-research-labs/pearl/node/mining/cpuminer"
-	"github.com/pearl-research-labs/pearl/node/netsync"
-	"github.com/pearl-research-labs/pearl/node/peer"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	pearlversion "github.com/pearl-research-labs/pearl/version"
+	"github.com/modelos/modelos/node/addrmgr"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/blockchain/indexers"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/bloom"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/connmgr"
+	"github.com/modelos/modelos/node/database"
+	"github.com/modelos/modelos/node/mempool"
+	"github.com/modelos/modelos/node/mining"
+	"github.com/modelos/modelos/node/mining/cpuminer"
+	"github.com/modelos/modelos/node/netsync"
+	"github.com/modelos/modelos/node/peer"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	pearlversion "github.com/modelos/modelos/version"
 )
 
 const (
@@ -64,7 +64,7 @@ const (
 var (
 	// userAgentName is the user agent name and is used to help identify
 	// ourselves to other peers on the network.
-	userAgentName = "pearld"
+	userAgentName = "modelosd"
 
 	// userAgentVersion is the user agent version and is used to help
 	// identify ourselves to other peers on the network.
@@ -2366,7 +2366,7 @@ func (s *server) peerHandler() {
 	if !cfg.DisableDNSSeed {
 		// Add peers discovered through DNS to the address manager.
 		connmgr.SeedFromDNS(activeNetParams.Params, defaultRequiredServices,
-			pearldLookup, func(addrs []*wire.NetAddressV2) {
+			modelosLookup, func(addrs []*wire.NetAddressV2) {
 				// DNS seed lookups return varying addresses; we add
 				// all as having come from the seeder to ensure a
 				// diverse initial peer set. We put all addresses as
@@ -2844,7 +2844,7 @@ func newServer(listenAddrs, agentBlacklist, agentWhitelist []string,
 	if cfg.Prune != 0 {
 		services &^= wire.SFNodeNetwork
 	}
-	amgr := addrmgr.New(cfg.DataDir, pearldLookup)
+	amgr := addrmgr.New(cfg.DataDir, modelosLookup)
 
 	var listeners []net.Listener
 	var nat NAT
@@ -2993,7 +2993,7 @@ func newServer(listenAddrs, agentBlacklist, agentWhitelist []string,
 			MaxOrphanTxs:         cfg.MaxOrphanTxs,
 			MaxOrphanTxSize:      defaultMaxOrphanTxSize,
 			MinRelayTxFee:        cfg.minRelayTxFee,
-			MaxTxVersion:         2,
+			MaxTxVersion:         chainParams.MaxSupportedTxVersion,
 			RejectReplacement:    cfg.RejectReplacement,
 			MaxMempoolSize:       cfg.MaxMempool * 1000 * 1000,
 		},
@@ -3105,7 +3105,7 @@ func newServer(listenAddrs, agentBlacklist, agentWhitelist []string,
 		OnAccept:       s.inboundPeerConnected,
 		RetryDuration:  connectionRetryInterval,
 		TargetOutbound: uint32(targetOutbound),
-		Dial:           pearldDial,
+		Dial:           modelosDial,
 		OnConnection:   s.outboundPeerConnected,
 		GetNewAddress:  newAddressFunc,
 	})
@@ -3285,7 +3285,7 @@ func addrStringToNetAddr(addr string) (net.Addr, error) {
 	}
 
 	// Attempt to look up an IP address associated with the parsed host.
-	ips, err := pearldLookup(host)
+	ips, err := modelosLookup(host)
 	if err != nil {
 		return nil, err
 	}

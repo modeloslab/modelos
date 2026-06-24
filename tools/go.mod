@@ -1,4 +1,4 @@
-module github.com/pearl-research-labs/pearl/tools
+module github.com/modelos/modelos/tools
 
 go 1.26.1
 

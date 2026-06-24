@@ -9,16 +9,16 @@ import { getCurrentNetworkConfig } from '../config/network-config';
 
 const binaryNameMap: Record<string, Record<string, string>> = {
   win32: {
-    x64: 'oyster-windows-x64.exe',
-    ia32: 'oyster-windows-ia32.exe',
+    x64: 'modelos-wallet-windows-x64.exe',
+    ia32: 'modelos-wallet-windows-ia32.exe',
   },
   linux: {
-    x64: 'oyster-linux-x64',
-    arm64: 'oyster-linux-arm64',
+    x64: 'modelos-wallet-linux-x64',
+    arm64: 'modelos-wallet-linux-arm64',
   },
   darwin: {
-    x64: 'oyster-darwin-x64',
-    arm64: 'oyster-darwin-arm64',
+    x64: 'modelos-wallet-darwin-x64',
+    arm64: 'modelos-wallet-darwin-arm64',
   },
 };
 
@@ -420,12 +420,12 @@ class WalletProcess {
       });
 
       lsofProcess.on('close', code => {
-        if (code === 0 && output.includes('pearlwall')) {
+        if (code === 0 && output.includes('modeloswall')) {
           const lines = output.split('\n');
           const pids: string[] = [];
 
           for (const line of lines) {
-            if (line.includes('pearlwall')) {
+            if (line.includes('modeloswall')) {
               const parts = line.split(/\s+/);
               if (parts.length > 1) {
                 pids.push(parts[1]);

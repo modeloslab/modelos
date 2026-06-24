@@ -6,7 +6,7 @@ package wtxmgr
 
 import (
 	"github.com/btcsuite/btclog"
-	"github.com/pearl-research-labs/pearl/wallet/build"
+	"github.com/modelos/modelos/wallet/build"
 )
 
 // log is a logger that is initialized with no output filters.  This

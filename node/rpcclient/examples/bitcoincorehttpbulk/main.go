@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/rpcclient"
 )
 
 func main() {

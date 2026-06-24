@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/pearl-research-labs/pearl/wallet/internal/zero"
+	. "github.com/modelos/modelos/wallet/internal/zero"
 )
 
 func makeOneBytes(n int) []byte {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/pearl-research-labs/pearl/node/chaincfg"
+	. "github.com/modelos/modelos/node/chaincfg"
 )
 
 // Define some of the required parameters for a user-registered

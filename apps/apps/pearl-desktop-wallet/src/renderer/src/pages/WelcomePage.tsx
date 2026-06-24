@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { NetworkSelector } from '../components/NetworkSelector';
 import { SettingsButton } from '../components/SettingsButton';
-import { Logo, LogoSmall } from '@pearl/ui';
+import { Logo, LogoSmall } from '@modelos/ui';
 
 const features = [
   {
@@ -15,7 +15,7 @@ const features = [
   {
     icon: ArrowRightLeft,
     title: 'Easy Transactions',
-    description: 'Send and receive Pearl with ease',
+    description: 'Send and receive MDL with ease',
   },
   {
     icon: BarChart3,
@@ -74,7 +74,7 @@ export default function WelcomePage() {
         <div className="bg-brand-green mb-6 rounded-2xl p-4">
           <Logo className="h-10 w-10 text-white" />
         </div>
-        <h1 className="mb-4 text-2xl font-bold">Pearl Wallet</h1>
+        <h1 className="mb-4 text-2xl font-bold">modelOS Wallet</h1>
         <div className="border-brand-green mb-4 h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
         <p className="text-gray-600">
           {existingWalletName ? 'Starting wallet service...' : 'Checking for existing wallet...'}
@@ -97,8 +97,8 @@ export default function WelcomePage() {
       <div className="bg-brand-green mb-4 rounded-2xl p-4">
         <LogoSmall className="h-12 w-auto" />
       </div>
-      <h1 className="text-4xl font-bold">Pearl Wallet</h1>
-      <p className="mt-1 text-gray-600">The official Pearl (PRL) Open Source Desktop Wallet</p>
+      <h1 className="text-4xl font-bold">modelOS Wallet</h1>
+      <p className="mt-1 text-gray-600">The official modelOS (MDL) Open Source Desktop Wallet</p>
 
       <div className="my-10 w-full max-w-xs space-y-6 text-left">
         {features.map(feature => (

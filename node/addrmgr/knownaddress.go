@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // KnownAddress tracks information about a known network address that is used

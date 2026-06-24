@@ -17,8 +17,8 @@ export function UpgradeCta() {
       className="mx-auto flex items-center gap-2 rounded-full border border-green-300 bg-green-50 px-4 py-1.5 text-sm font-medium text-green-800 transition-colors hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500/40"
       title={
         status.latestVersion
-          ? `Pearl Wallet ${status.latestVersion} is available`
-          : 'A new Pearl Wallet version is available'
+          ? `modelOS Wallet ${status.latestVersion} is available`
+          : 'A new modelOS Wallet version is available'
       }
     >
       <ArrowUpCircle className="h-4 w-4" />

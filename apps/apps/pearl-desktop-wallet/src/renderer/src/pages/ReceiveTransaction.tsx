@@ -56,7 +56,7 @@ export default function ReceiveTransaction() {
         >
           <ArrowLeft className="h-5 w-5 text-gray-700" />
         </button>
-        <h1 className="text-xl font-semibold text-gray-900">Receive Pearl</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Receive MDL</h1>
       </div>
 
       {/* Content - Scrollable */}
@@ -65,7 +65,7 @@ export default function ReceiveTransaction() {
           {/* Wallet Info */}
           <div className="mb-8 text-center">
             <h2 className="mb-2 text-2xl font-bold text-gray-900">Receive to {walletName}</h2>
-            <p className="text-gray-600">Share this address or QR code to receive Pearl tokens</p>
+            <p className="text-gray-600">Share this address or QR code to receive MDL tokens</p>
           </div>
 
           {isLoading ? (
@@ -133,7 +133,7 @@ export default function ReceiveTransaction() {
               {/* Instructions */}
               <div className="border-brand-summer-sky/30 bg-brand-summer-sky/10 mt-4 rounded-lg border p-4">
                 <div className="text-sm">
-                  <p className="mb-2 font-medium text-gray-900">How to receive Pearl Tokens:</p>
+                  <p className="mb-2 font-medium text-gray-900">How to receive MDL Tokens:</p>
                   <ul className="space-y-1 text-gray-700">
                     <li>• Share this address with the sender</li>
                     <li>• Or let them scan the QR code</li>

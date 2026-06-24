@@ -8,7 +8,7 @@ import (
 	"container/list"
 	"math/big"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
+	"github.com/modelos/modelos/node/blockchain"
 )
 
 // findBestBlockMsg scans the message queue for the highest priority blockMsg.

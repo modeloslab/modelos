@@ -75,9 +75,14 @@ const parseBech32 = (address: string, options?: Options): AddressInfo => {
   let decoded;
 
   const lowerAddress = address.toLowerCase();
-  // Only accept Taproot addresses (witness v1) - reject legacy SegWit v0
-  // Check if address starts with 'p' (witness v1)
-  if (!lowerAddress.startsWith('prl1p') && !lowerAddress.startsWith('tprl1p') && !lowerAddress.startsWith('rprl1p')) {
+  // modelOS uses Taproot-only addresses (witness v1, bech32m).
+  // Valid prefixes: mdl1p (mainnet), tmdl1p (testnet), rmdl1p (regtest), smdl1p (simnet).
+  if (
+    !lowerAddress.startsWith('mdl1p') &&
+    !lowerAddress.startsWith('tmdl1p') &&
+    !lowerAddress.startsWith('rmdl1p') &&
+    !lowerAddress.startsWith('smdl1p')
+  ) {
     throw new Error('Invalid address');
   }
 
@@ -89,9 +94,10 @@ const parseBech32 = (address: string, options?: Options): AddressInfo => {
   }
 
   const mapPrefixToNetwork: { [key: string]: Network } = {
-    prl: Network.mainnet,
-    tprl: Network.testnet,
-    rprl: Network.simnet,
+    mdl:  Network.mainnet,
+    tmdl: Network.testnet,
+    rmdl: Network.regtest,
+    smdl: Network.simnet,
   };
 
   const network: Network | undefined = mapPrefixToNetwork[decoded.prefix];
@@ -131,8 +137,13 @@ const getAddressInfo = (address: string, options?: Options): AddressInfo => {
   let decoded: Uint8Array;
 
   const lowerAddress = address.toLowerCase();
-  // Check if it's a bech32/bech32m address (starts with network prefix + '1')
-  if (lowerAddress.startsWith('prl1') || lowerAddress.startsWith('tprl1') || lowerAddress.startsWith('rprl1')) {
+  // Check if it's a bech32m address (starts with any valid modelOS network prefix).
+  if (
+    lowerAddress.startsWith('mdl1') ||
+    lowerAddress.startsWith('tmdl1') ||
+    lowerAddress.startsWith('rmdl1') ||
+    lowerAddress.startsWith('smdl1')
+  ) {
     try {
       return parseBech32(address, options);
     } catch (error) {

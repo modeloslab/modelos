@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // TestChainSvrWsNtfns tests all of the chain server websocket-specific

@@ -1,4 +1,4 @@
-module github.com/pearl-research-labs/pearl
+module github.com/modelos/modelos
 
 go 1.26.1
 
@@ -30,6 +30,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
 	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/zeebo/blake3 v0.2.4
 	go.etcd.io/bbolt v1.4.2
 	golang.org/x/crypto v0.48.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
@@ -137,6 +138,7 @@ require (
 	github.com/karamaru-alpha/copyloopvar v1.2.1 // indirect
 	github.com/kisielk/errcheck v1.9.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.6 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.10 // indirect
 	github.com/lasiar/canonicalheader v1.1.2 // indirect

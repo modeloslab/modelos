@@ -5,7 +5,7 @@
 package ffldb
 
 import (
-	"github.com/pearl-research-labs/pearl/node/database/internal/treap"
+	"github.com/modelos/modelos/node/database/internal/treap"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )

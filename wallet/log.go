@@ -12,13 +12,13 @@ import (
 
 	"github.com/btcsuite/btclog"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
-	neutrino "github.com/pearl-research-labs/pearl/spv"
-	"github.com/pearl-research-labs/pearl/wallet/chain"
-	"github.com/pearl-research-labs/pearl/wallet/rpc/legacyrpc"
-	"github.com/pearl-research-labs/pearl/wallet/rpc/rpcserver"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
-	"github.com/pearl-research-labs/pearl/wallet/wtxmgr"
+	"github.com/modelos/modelos/node/rpcclient"
+	neutrino "github.com/modelos/modelos/spv"
+	"github.com/modelos/modelos/wallet/chain"
+	"github.com/modelos/modelos/wallet/rpc/legacyrpc"
+	"github.com/modelos/modelos/wallet/rpc/rpcserver"
+	"github.com/modelos/modelos/wallet/wallet"
+	"github.com/modelos/modelos/wallet/wtxmgr"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and

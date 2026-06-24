@@ -13,8 +13,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/wallet/internal/rpchelp"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/wallet/internal/rpchelp"
 )
 
 var outputFile = func() *os.File {

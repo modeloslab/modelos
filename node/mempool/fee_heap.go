@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"container/heap"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // txFeeRateEntry represents a single transaction in the fee-rate min-heap.

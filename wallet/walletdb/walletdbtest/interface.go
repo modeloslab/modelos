@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/walletdb"
 )
 
 // errSubTestFail is used to signal that a sub test returned false.

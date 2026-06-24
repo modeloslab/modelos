@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 const (
@@ -114,6 +114,14 @@ func checkInputsStandard(tx *btcutil.Tx, utxoView *blockchain.UtxoViewpoint) err
 		// function.
 		entry := utxoView.LookupEntry(txIn.PreviousOutPoint)
 		originPkScript := entry.PkScript()
+		// Inference bounty covenant inputs (a v4 proof claim or a post-window requester
+		// refund) spend a deliberately non-standard covenant script. They are validated by
+		// the dedicated covenant rule (checkInferenceBountySpends), not by standard script
+		// forms — so exempt them here, mirroring the covenant OUTPUT exception in
+		// CheckTransactionStandard. Without this they relay-fail as "non-standard input".
+		if blockchain.IsInferenceBountyScript(originPkScript) {
+			continue
+		}
 		switch txscript.GetScriptClass(originPkScript) {
 		case txscript.NonStandardTy:
 			str := fmt.Sprintf("transaction input #%d has a "+
@@ -305,8 +313,16 @@ func CheckTransactionStandard(tx *btcutil.Tx, height int32,
 	for i, txOut := range msgTx.TxOut {
 		scriptClass := txscript.GetScriptClass(txOut.PkScript)
 		if scriptClass == txscript.NonStandardTy {
-			str := fmt.Sprintf("transaction output %d: non-standard script form", i)
-			return txRuleError(wire.RejectNonstandard, str)
+			// The inference bounty covenant (TxOut[0] of a version-3 inference_tx) is an
+			// OP_PUSHDATA1-framed "mdlb" blob that the generic script engine classifies as
+			// non-standard, but the node validates its spends with dedicated covenant rules
+			// (blockchain/inference_covenant.go). Accept it so the inference_tx can enter the
+			// mempool and be mined; it still carries the bounty value, so the dust check below
+			// applies, and claims/refunds are consensus-checked when the covenant is spent.
+			if !blockchain.IsInferenceBountyScript(txOut.PkScript) {
+				str := fmt.Sprintf("transaction output %d: non-standard script form", i)
+				return txRuleError(wire.RejectNonstandard, str)
+			}
 		}
 
 		// Accumulate the number of outputs which only carry data.  For

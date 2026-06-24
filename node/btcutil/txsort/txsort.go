@@ -11,8 +11,8 @@ import (
 	"bytes"
 	"sort"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // InPlaceSort modifies the passed transaction inputs and outputs to be sorted

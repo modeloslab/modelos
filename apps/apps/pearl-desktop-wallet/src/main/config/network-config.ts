@@ -18,10 +18,11 @@ export interface NetworkConfig {
     defaultPeerPort: number;
 }
 
-const nodeIndex = Math.floor(Math.random() * 3);
+const mainnetNodeIndex = Math.floor(Math.random() * MAINNET_DEFAULT_PEER_ADDRESSES.length);
+const testnetNodeIndex = Math.floor(Math.random() * TESTNET_DEFAULT_PEER_ADDRESSES.length);
 
-const mainnetDefaultPeerAddress = MAINNET_DEFAULT_PEER_ADDRESSES[nodeIndex];
-const testnetDefaultPeerAddress = TESTNET_DEFAULT_PEER_ADDRESSES[nodeIndex];
+const mainnetDefaultPeerAddress = MAINNET_DEFAULT_PEER_ADDRESSES[mainnetNodeIndex];
+const testnetDefaultPeerAddress = TESTNET_DEFAULT_PEER_ADDRESSES[testnetNodeIndex];
 
 const NETWORK_CONFIGS: Record<Network, NetworkConfig> = {
     mainnet: {
@@ -30,9 +31,9 @@ const NETWORK_CONFIGS: Record<Network, NetworkConfig> = {
         rpcPort: 8335,
         walletFlag: '',  // No flag for mainnet (default)
         dataSubdir: 'mainnet',
-        addressPrefix: 'prl1',
+        addressPrefix: 'mdl1',  // Taproot addresses: mdl1p...
         defaultPeerAddress: mainnetDefaultPeerAddress,
-        defaultPeerPort: 44108,
+        defaultPeerPort: 44208,
     },
     testnet: {
         name: 'testnet',
@@ -40,9 +41,9 @@ const NETWORK_CONFIGS: Record<Network, NetworkConfig> = {
         rpcPort: 8335,
         walletFlag: '--testnet2',
         dataSubdir: 'testnet2',
-        addressPrefix: 'tprl1',
+        addressPrefix: 'tmdl1',  // Testnet Taproot: tmdl1p...
         defaultPeerAddress: testnetDefaultPeerAddress,
-        defaultPeerPort: 44112,
+        defaultPeerPort: 44210,
     },
 };
 

@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 
-	"github.com/pearl-research-labs/pearl/wallet/chain"
+	"github.com/modelos/modelos/wallet/chain"
 )
 
 // Block100000 uses ZKCertificate with stub proof (not valid for PoW verification).

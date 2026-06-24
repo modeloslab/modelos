@@ -31,13 +31,12 @@ tasks:
     cmds:
       - make CC={{.CC | default "gcc"}} CXX={{.CXX | default "g++"}}
 
-  build:pearld:
-    desc: Build pearld
-
+  build:modelosd:
+    desc: Build modelosd node daemon
     deps: [build:zk-gobind, build:libxmss]
     cmds:
       - mkdir -p bin
-      - go build -tags xmss,zkpow -o bin/pearld -v ./node
+      - go build -tags xmss,zkpow -o bin/modelosd -v ./node
 
   build:prlctl:
     desc: Build prlctl
@@ -54,12 +53,12 @@ tasks:
       - go build -tags xmss,zkpow -o bin/oyster -v ./wallet
 
   build:pearl:
-    desc: Build pearld and prlctl
-    deps: [build:pearld, build:prlctl]
+    desc: Build modelosd and prlctl
+    deps: [build:modelosd, build:prlctl]
 
   build:blockchain:
-    desc: Build all blockchain binaries (pearld, prlctl, oyster)
-    deps: [build:pearld, build:prlctl, build:oyster]
+    desc: Build all blockchain binaries (modelosd, prlctl, oyster)
+    deps: [build:modelosd, build:prlctl, build:oyster]
 
   build:miner:
     desc: Install miner Python packages (Linux/Windows only; the GPU miner requires CUDA)

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/spv/headerfs"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/spv/headerfs"
 )
 
 const (

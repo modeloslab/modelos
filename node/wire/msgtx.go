@@ -12,12 +12,26 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 const (
 	// TxVersion is the current latest supported transaction version.
 	TxVersion = 1
+
+	// TxVersionInference is the transaction version for an inference request.
+	// A version-3 transaction locks an inference fee on-chain and broadcasts
+	// a job to the open inference market; any GPU worker may claim the fee
+	// by submitting a valid TxVersionInferenceProof transaction first.
+	TxVersionInference = 3
+
+	// TxVersionInferenceProof is the transaction version for an inference
+	// result proof.  Any inference worker (not just the block winner) may
+	// submit a version-4 transaction carrying an InferenceResultProof within
+	// InferenceProofWindowBlocks of the original inference_tx being confirmed.
+	// The first valid proof confirmed on-chain claims the locked inference fee,
+	// which is paid to the WorkerAddress in the proof.
+	TxVersionInferenceProof = 4
 
 	// MaxTxInSequenceNum is the maximum sequence number the sequence field
 	// of a transaction input can be.

@@ -17,7 +17,7 @@ interface AllNetworksPeerSettings {
   testnet: NetworkPeerSettings;
 }
 
-const SETTINGS_DIR = path.join(os.homedir(), '.pearl-wallet', 'settings');
+const SETTINGS_DIR = path.join(os.homedir(), '.modelos-wallet', 'settings');
 const SETTINGS_FILE = path.join(SETTINGS_DIR, 'peer-settings.json');
 
 // Ensure settings directory exists

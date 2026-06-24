@@ -1,6 +1,6 @@
 {
-  "appId": "com.pearl.pearl.wallet",
-  "productName": "Pearl Wallet",
+  "appId": "com.modelos.wallet",
+  "productName": "modelOS Wallet",
   "directories": {
     "output": "dist"
   },
@@ -31,8 +31,8 @@
     ],
     "extraResources": [
       {
-        "from": "bin/oyster-darwin-${arch}",
-        "to": "bin/oyster-darwin-${arch}",
+        "from": "bin/modelos-wallet-darwin-${arch}",
+        "to": "bin/modelos-wallet-darwin-${arch}",
         "filter": [
           "**/*"
         ]
@@ -51,8 +51,8 @@
     ],
     "extraResources": [
       {
-        "from": "bin/oyster-windows-${arch}.exe",
-        "to": "bin/oyster-windows-${arch}.exe",
+        "from": "bin/modelos-wallet-windows-${arch}.exe",
+        "to": "bin/modelos-wallet-windows-${arch}.exe",
         "filter": [
           "**/*"
         ]
@@ -71,20 +71,20 @@
     ],
     "extraResources": [
       {
-        "from": "bin/oyster-linux-${arch}",
-        "to": "bin/oyster-linux-${arch}",
+        "from": "bin/modelos-wallet-linux-${arch}",
+        "to": "bin/modelos-wallet-linux-${arch}",
         "filter": [
           "**/*"
         ]
       }
     ],
     "category": "Office",
-    "synopsis": "Pearl Desktop Wallet",
-    "description": "The official open source desktop wallet for Pearl Network"
+    "synopsis": "modelOS Desktop Wallet",
+    "description": "The official open source desktop wallet for the modelOS network"
   },
   "deb": {
-    "artifactName": "pearl-desktop-wallet_${version}_${arch}.${ext}",
-    "packageName": "pearl-desktop-wallet",
+    "artifactName": "modelos-desktop-wallet_${version}_${arch}.${ext}",
+    "packageName": "modelos-desktop-wallet",
     "depends": [
       "libgtk-3-0",
       "libnotify4",
@@ -105,7 +105,7 @@
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "buildUniversalInstaller": false,
-    "artifactName": "Pearl-Wallet-Setup-${version}.${ext}"
+    "artifactName": "modelOS-Wallet-Setup-${version}.${ext}"
   },
   "publish": null
 }

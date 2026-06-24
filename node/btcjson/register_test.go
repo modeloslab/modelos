@@ -9,7 +9,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcjson"
+	"github.com/modelos/modelos/node/btcjson"
 )
 
 // TestUsageFlagStringer tests the stringized output for the UsageFlag type.

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil"
 	//"github.com/davecgh/go-spew/spew"
 )
 

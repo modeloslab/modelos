@@ -9,9 +9,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil/bloom"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/btcutil/bloom"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // This example demonstrates how to create a new bloom filter, add a transaction

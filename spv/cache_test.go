@@ -4,13 +4,13 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/cache"
-	"github.com/pearl-research-labs/pearl/spv/cache/lru"
-	"github.com/pearl-research-labs/pearl/spv/filterdb"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/cache"
+	"github.com/modelos/modelos/spv/cache/lru"
+	"github.com/modelos/modelos/spv/filterdb"
 )
 
 // TestBlockFilterCaches tests that we can put and retrieve elements from all

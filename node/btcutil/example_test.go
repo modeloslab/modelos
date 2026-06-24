@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil"
 )
 
 func ExampleAmount() {

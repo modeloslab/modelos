@@ -9,9 +9,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcec"
-	. "github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
+	"github.com/modelos/modelos/node/btcec"
+	. "github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
 )
 
 func TestEncodeDecodeWIF(t *testing.T) {

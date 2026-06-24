@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	_ "github.com/pearl-research-labs/pearl/wallet/walletdb/bdb"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/wallet/wallet"
+	"github.com/modelos/modelos/wallet/walletdb"
+	_ "github.com/modelos/modelos/wallet/walletdb/bdb"
 )
 
 const defaultNet = "mainnet"

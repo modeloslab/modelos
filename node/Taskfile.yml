@@ -68,7 +68,7 @@ tasks:
       CGO_ENABLED: 1
     cmds:
       - mkdir -p bin
-      - go build -tags xmss,zkpow -v -o bin/pearld {{.PKG}}
+      - go build -tags xmss,zkpow -v -o bin/modelosd {{.PKG}}
       - go build -tags xmss,zkpow -v -o bin/prlctl {{.PKG}}/cmd/prlctl
       - go build -tags xmss,zkpow -v -o bin/gencerts {{.PKG}}/cmd/gencerts
       - go build -tags xmss,zkpow -v -o bin/findcheckpoint {{.PKG}}/cmd/findcheckpoint
@@ -80,7 +80,7 @@ tasks:
     env:
       CGO_ENABLED: 1
     cmds:
-      - go build -tags xmss,zkpow -v -o $(go env GOPATH)/bin/pearld {{.PKG}}
+      - go build -tags xmss,zkpow -v -o $(go env GOPATH)/bin/modelosd {{.PKG}}
       - go build -tags xmss,zkpow -v -o $(go env GOPATH)/bin/prlctl {{.PKG}}/cmd/prlctl
       - go build -tags xmss,zkpow -v -o $(go env GOPATH)/bin/gencerts {{.PKG}}/cmd/gencerts
       - go build -tags xmss,zkpow -v -o $(go env GOPATH)/bin/findcheckpoint {{.PKG}}/cmd/findcheckpoint
@@ -92,7 +92,7 @@ tasks:
     env:
       CGO_ENABLED: 1
     cmds:
-      - go build -tags xmss,zkpow -v -trimpath -ldflags="-s -w -buildid=" -o $(go env GOPATH)/bin/pearld {{.PKG}}
+      - go build -tags xmss,zkpow -v -trimpath -ldflags="-s -w -buildid=" -o $(go env GOPATH)/bin/modelosd {{.PKG}}
       - go build -tags xmss,zkpow -v -trimpath -ldflags="-s -w -buildid=" -o $(go env GOPATH)/bin/prlctl {{.PKG}}/cmd/prlctl
 
 # ============

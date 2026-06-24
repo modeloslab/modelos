@@ -1,4 +1,4 @@
-module github.com/pearl-research-labs/pearl/proxy/caddy-jsonrpc-cache
+module github.com/modelos/modelos/proxy/caddy-jsonrpc-cache
 
 go 1.26.1
 

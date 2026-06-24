@@ -18,22 +18,22 @@ task build:blockchain
 ```
 
 Binaries are placed in `bin/`:
-- `pearld` — full node
+- `modelosd` — full node
 - `prlctl` — CLI control tool
 - `oyster` — wallet daemon
 
 To build only the node:
 
 ```bash
-task build:pearld
+task build:modelosd
 ```
 
 ## Startup
 
-pearld will run and start downloading the block chain with no extra
+modelosd will run and start downloading the block chain with no extra
 configuration necessary. See the
 [configuration documentation](configuration.md) for advanced options.
 
 ```bash
-./bin/pearld
+./bin/modelosd
 ```

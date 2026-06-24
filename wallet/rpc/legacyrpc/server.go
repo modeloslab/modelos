@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/btcsuite/websocket"
-	"github.com/pearl-research-labs/pearl/node/btcjson"
-	"github.com/pearl-research-labs/pearl/wallet/chain"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
+	"github.com/modelos/modelos/node/btcjson"
+	"github.com/modelos/modelos/wallet/chain"
+	"github.com/modelos/modelos/wallet/wallet"
 )
 
 type websocketClient struct {

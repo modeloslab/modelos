@@ -28,7 +28,7 @@ const (
 )
 
 // Build may be overridden at link time via
-// -ldflags "-X github.com/pearl-research-labs/pearl/version.Build=<value>".
+// -ldflags "-X github.com/modelos/modelos/version.Build=<value>".
 var Build string
 
 // Version returns the application version as a properly formed string per the

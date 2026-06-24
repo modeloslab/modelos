@@ -6,7 +6,7 @@ package legacyrpc
 
 import (
 	"github.com/btcsuite/btclog"
-	"github.com/pearl-research-labs/pearl/wallet/build"
+	"github.com/modelos/modelos/wallet/build"
 )
 
 var log = btclog.Disabled

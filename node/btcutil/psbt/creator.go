@@ -5,7 +5,7 @@
 package psbt
 
 import (
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // MinTxVersion is the lowest transaction version that we'll permit.

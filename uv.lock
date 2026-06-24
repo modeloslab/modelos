@@ -18,6 +18,7 @@ members = [
     "pearl-gemm",
     "pearl-gemm-build-utils",
     "py-pearl-mining",
+    "standalone-miner",
     "vllm-miner",
 ]
 overrides = [
@@ -2309,7 +2310,7 @@ source = { virtual = "." }
 
 [[package]]
 name = "pearl-gateway"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "miner/pearl-gateway" }
 dependencies = [
     { name = "aiohttp" },
@@ -2575,7 +2576,7 @@ wheels = [
 
 [[package]]
 name = "py-pearl-mining"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "py-pearl-mining" }
 
 [package.dev-dependencies]
@@ -3480,6 +3481,25 @@ wheels = [
 ]
 
 [[package]]
+name = "standalone-miner"
+version = "1.0.0"
+source = { editable = "miner/standalone-miner" }
+dependencies = [
+    { name = "blake3" },
+    { name = "miner-base" },
+    { name = "pearl-gateway" },
+    { name = "py-pearl-mining" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "blake3", specifier = ">=0.4.1" },
+    { name = "miner-base", editable = "miner/miner-base" },
+    { name = "pearl-gateway", editable = "miner/pearl-gateway" },
+    { name = "py-pearl-mining", editable = "py-pearl-mining" },
+]
+
+[[package]]
 name = "starlette"
 version = "0.52.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3986,6 +4006,8 @@ version = "0.1.0"
 source = { editable = "miner/vllm-miner" }
 dependencies = [
     { name = "aiohttp" },
+    { name = "blake3" },
+    { name = "coincurve" },
     { name = "compressed-tensors" },
     { name = "miner-base" },
     { name = "miner-utils" },
@@ -3993,6 +4015,7 @@ dependencies = [
     { name = "pearl-gateway" },
     { name = "pearl-gemm" },
     { name = "pyyaml" },
+    { name = "standalone-miner" },
     { name = "torch", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "torch", version = "2.11.0+cu130", source = { registry = "https://download.pytorch.org/whl/cu130" }, marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "torchaudio", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
@@ -4023,6 +4046,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.13.3" },
+    { name = "blake3", specifier = ">=0.4.0" },
+    { name = "coincurve", specifier = ">=13.0.0" },
     { name = "compressed-tensors" },
     { name = "miner-base", editable = "miner/miner-base" },
     { name = "miner-utils", editable = "miner/miner-utils" },
@@ -4030,6 +4055,7 @@ requires-dist = [
     { name = "pearl-gateway", editable = "miner/pearl-gateway" },
     { name = "pearl-gemm", editable = "miner/pearl-gemm" },
     { name = "pyyaml", specifier = ">=6.0.1" },
+    { name = "standalone-miner", editable = "miner/standalone-miner" },
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32'", specifier = "==2.11.0" },
     { name = "torch", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = "==2.11.0", index = "https://download.pytorch.org/whl/cu130" },
     { name = "torchaudio", marker = "sys_platform != 'linux' and sys_platform != 'win32'", specifier = "==2.11.0" },

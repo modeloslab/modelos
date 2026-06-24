@@ -19,7 +19,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 const (

@@ -7,7 +7,7 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // TestThresholdStateStringer tests the stringized output for the

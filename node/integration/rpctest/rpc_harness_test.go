@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 func testSendOutputs(r *Harness, t *testing.T) {
@@ -63,7 +63,7 @@ func testSendOutputs(r *Harness, t *testing.T) {
 
 	// First, generate a small spend which will require only a single
 	// input.
-	txid := genSpend(btcutil.Amount(5 * btcutil.GrainPerPearl))
+	txid := genSpend(btcutil.Amount(5 * btcutil.GrainPerMDL))
 
 	// Generate a single block, the transaction the wallet created should
 	// be found in this block.
@@ -75,7 +75,7 @@ func testSendOutputs(r *Harness, t *testing.T) {
 
 	// Next, generate a spend much greater than the block reward. This
 	// transaction should also have been mined properly.
-	txid = genSpend(btcutil.Amount(500 * btcutil.GrainPerPearl))
+	txid = genSpend(btcutil.Amount(500 * btcutil.GrainPerMDL))
 	blockHashes, err = r.Client.Generate(1)
 	if err != nil {
 		t.Fatalf("unable to generate single block: %v", err)
@@ -335,7 +335,7 @@ func testGenerateAndSubmitBlock(r *Harness, t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create script: %v", err)
 	}
-	output := wire.NewTxOut(btcutil.GrainPerPearl, pkScript)
+	output := wire.NewTxOut(btcutil.GrainPerMDL, pkScript)
 
 	const numTxns = 5
 	txns := make([]*btcutil.Tx, 0, numTxns)
@@ -402,7 +402,7 @@ func testGenerateAndSubmitBlockWithCustomCoinbaseOutputs(r *Harness,
 	if err != nil {
 		t.Fatalf("unable to create script: %v", err)
 	}
-	output := wire.NewTxOut(btcutil.GrainPerPearl, pkScript)
+	output := wire.NewTxOut(btcutil.GrainPerMDL, pkScript)
 
 	const numTxns = 5
 	txns := make([]*btcutil.Tx, 0, numTxns)
@@ -525,7 +525,7 @@ func testMemWalletLockedOutputs(r *Harness, t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create script: %v", err)
 	}
-	outputAmt := btcutil.Amount(50 * btcutil.GrainPerPearl)
+	outputAmt := btcutil.Amount(50 * btcutil.GrainPerMDL)
 	output := wire.NewTxOut(int64(outputAmt), pkScript)
 	tx, err := r.CreateTransaction([]*wire.TxOut{output}, 100, true)
 	if err != nil {

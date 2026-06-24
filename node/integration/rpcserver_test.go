@@ -16,11 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/integration/rpctest"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/integration/rpctest"
+	"github.com/modelos/modelos/node/rpcclient"
 )
 
 func testGetBestBlock(r *rpctest.Harness, t *testing.T) {

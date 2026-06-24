@@ -8,11 +8,11 @@
 // Full documentation of the API implemented by this package is maintained in a
 // language-agnostic document:
 //
-//	https://github.com/pearl-research-labs/pearl/wallet/blob/master/rpc/documentation/api.md
+//	https://github.com/modelos/modelos/wallet/blob/master/rpc/documentation/api.md
 //
 // Any API changes must be performed according to the steps listed here:
 //
-//	https://github.com/pearl-research-labs/pearl/wallet/blob/master/rpc/documentation/serverchanges.md
+//	https://github.com/modelos/modelos/wallet/blob/master/rpc/documentation/serverchanges.md
 package rpcserver
 
 import (
@@ -26,20 +26,20 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/chain"
-	"github.com/pearl-research-labs/pearl/wallet/internal/cfgutil"
-	"github.com/pearl-research-labs/pearl/wallet/internal/zero"
-	"github.com/pearl-research-labs/pearl/wallet/netparams"
-	pb "github.com/pearl-research-labs/pearl/wallet/rpc/walletrpc"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
-	"github.com/pearl-research-labs/pearl/wallet/wallet"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/rpcclient"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/chain"
+	"github.com/modelos/modelos/wallet/internal/cfgutil"
+	"github.com/modelos/modelos/wallet/internal/zero"
+	"github.com/modelos/modelos/wallet/netparams"
+	pb "github.com/modelos/modelos/wallet/rpc/walletrpc"
+	"github.com/modelos/modelos/wallet/waddrmgr"
+	"github.com/modelos/modelos/wallet/wallet"
+	"github.com/modelos/modelos/wallet/walletdb"
 )
 
 // Public API version constants

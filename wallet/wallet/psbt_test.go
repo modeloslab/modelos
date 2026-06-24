@@ -9,15 +9,15 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txrules"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txsizes"
+	"github.com/modelos/modelos/wallet/wallet/txrules"
+	"github.com/modelos/modelos/wallet/wallet/txsizes"
 	"github.com/stretchr/testify/require"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/psbt"
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/waddrmgr"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/psbt"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/waddrmgr"
 )
 
 var (

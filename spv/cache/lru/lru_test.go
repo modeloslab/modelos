@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/spv/cache"
+	"github.com/modelos/modelos/spv/cache"
 	"github.com/stretchr/testify/require"
 )
 

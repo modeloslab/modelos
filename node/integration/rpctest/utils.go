@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/rpcclient"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/rpcclient"
 )
 
 // JoinType is an enum representing a particular type of "node join". A node

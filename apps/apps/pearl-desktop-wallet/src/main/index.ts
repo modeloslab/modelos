@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import { electronApp, optimizer } from '@electron-toolkit/utils';
 import log from 'electron-log';
 import { registerWalletIpc } from './ipc/register-wallet-ipc';
+import { inferenceRelay } from './services/inference-relay-service';
 import { WindowService } from './services/window-service/window-service';
 import { createMainWindow } from './services/window-service/create-window';
 import { registerWindowIpc } from './ipc/register-window-ipc';
@@ -50,7 +51,7 @@ console.info = log.info.bind(log);
 console.debug = log.debug.bind(log);
 
 log.info('====================================');
-log.info('Pearl Desktop Wallet starting...');
+log.info('modelOS Desktop Wallet starting...');
 log.info(`App version: ${app.getVersion()}`);
 log.info(`Electron version: ${process.versions.electron}`);
 log.info(`Node version: ${process.versions.node}`);
@@ -62,14 +63,19 @@ let managerService: ManagerService | null = null;
 let updateService: UpdateService | null = null;
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.pearl.wallet');
+  electronApp.setAppUserModelId('com.modelos.wallet');
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  const windowAS = new WindowService(createMainWindow());
+  const mainWindow = createMainWindow();
+  const windowAS = new WindowService(mainWindow);
   registerWindowIpc(windowAS);
+
+  // Start the inference relay — miners fetch prompts and POST results here.
+  inferenceRelay.setWindow(mainWindow);
+  inferenceRelay.start();
 
   managerService = new ManagerService();
   registerManagerIpc(managerService);
@@ -122,6 +128,7 @@ app.on('before-quit', async event => {
   isQuitting = true;
   try {
     updateService?.stop();
+    inferenceRelay.stop();
     await managerService?.stopWalletProcess();
   } catch {
     // swallow errors

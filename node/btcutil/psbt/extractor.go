@@ -12,8 +12,8 @@ package psbt
 import (
 	"bytes"
 
-	"github.com/pearl-research-labs/pearl/node/txscript"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/txscript"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // Extract takes a finalized psbt.Packet and outputs a finalized transaction

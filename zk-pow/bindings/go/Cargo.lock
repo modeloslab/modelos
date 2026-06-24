@@ -2052,14 +2052,17 @@ name = "zk-pow-go"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "blake3",
  "cbindgen",
  "env_logger 0.10.2",
  "itertools 0.14.0",
  "lazy_static",
+ "libc",
  "log",
  "primitive-types 0.12.2",
  "rand 0.8.6",
+ "rayon",
  "tikv-jemallocator",
  "zk-pow",
 ]

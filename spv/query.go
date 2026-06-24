@@ -7,17 +7,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs"
-	"github.com/pearl-research-labs/pearl/node/btcutil/gcs/builder"
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/banman"
-	"github.com/pearl-research-labs/pearl/spv/cache"
-	"github.com/pearl-research-labs/pearl/spv/filterdb"
-	"github.com/pearl-research-labs/pearl/spv/pushtx"
-	"github.com/pearl-research-labs/pearl/spv/query"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/gcs"
+	"github.com/modelos/modelos/node/btcutil/gcs/builder"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/banman"
+	"github.com/modelos/modelos/spv/cache"
+	"github.com/modelos/modelos/spv/filterdb"
+	"github.com/modelos/modelos/spv/pushtx"
+	"github.com/modelos/modelos/spv/query"
 )
 
 var (

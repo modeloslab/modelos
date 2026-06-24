@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/pearl-research-labs/pearl/node/btcec"
+	"github.com/modelos/modelos/node/btcec"
 )
 
 // These constants define the lengths of serialized public keys.

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/addrmgr"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/addrmgr"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // TestIPTypes ensures the various functions which determine the type of an IP

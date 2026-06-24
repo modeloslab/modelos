@@ -5,8 +5,8 @@
 package mempool
 
 import (
-	"github.com/pearl-research-labs/pearl/node/blockchain"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/blockchain"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // RuleError identifies a rule violation.  It is used to indicate that

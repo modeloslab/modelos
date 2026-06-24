@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // NodeCounts holds various statistics about the running system for use in html templates

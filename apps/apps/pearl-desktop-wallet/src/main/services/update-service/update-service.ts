@@ -209,7 +209,7 @@ class UpdateService extends EventEmitter {
         headers: {
           Accept: 'application/vnd.github+json',
           'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent': `pearl-desktop-wallet/${app.getVersion()}`,
+          'User-Agent': `modelos-desktop-wallet/${app.getVersion()}`,
         },
         signal: controller.signal,
       });
@@ -231,7 +231,7 @@ class UpdateService extends EventEmitter {
       if (release.draft || release.prerelease) continue;
       const version = parseTaggedSemver(release.tag_name, this.options.tagPrefix);
       if (!version) continue;
-      // Skip prereleases surfaced only via tag (e.g. "pearl-wallet-v0.1.0-rc1")
+      // Skip prereleases surfaced only via tag (e.g. "modelos-wallet-v0.1.0-rc1")
       if (version.prerelease) continue;
       if (!best || compareSemver(version, best.version) > 0) {
         best = { release, version };

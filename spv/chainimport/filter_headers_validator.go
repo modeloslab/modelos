@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/spv/chainsync"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/spv/chainsync"
 )
 
 // FilterHeadersImportSourceValidator implements HeaderValidator for filter

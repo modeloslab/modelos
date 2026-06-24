@@ -14,7 +14,7 @@ import (
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 
-	"github.com/pearl-research-labs/pearl/coredns-dnsseed/crawler"
+	"github.com/modelos/modelos/coredns-dnsseed/crawler"
 )
 
 const pluginName = "dnsseed"

@@ -1,13 +1,13 @@
-# pearld
+# modelosd
 
 [![Build Status](https://github.com/pearl-research-labs/pearl/workflows/Build%20and%20Test/badge.svg)](https://github.com/pearl-research-labs/pearl/actions)
 [![ISC License](https://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/pearl-research-labs/pearl/node)
 
-pearld is the reference implementation of the Pearl Protocol. It is a full node
+modelosd is the reference implementation of the Pearl Protocol. It is a full node
 that downloads, validates, and serves the Pearl blockchain.
 
-pearld does *not* include wallet functionality. That is provided by the
+modelosd does *not* include wallet functionality. That is provided by the
 [Oyster wallet](https://github.com/pearl-research-labs/pearl/tree/master/wallet).
 
 ## Contents
@@ -26,4 +26,4 @@ pearld does *not* include wallet functionality. That is provided by the
 
 ## License
 
-pearld is licensed under the [copyfree](http://copyfree.org) ISC License.
+modelosd is licensed under the [copyfree](http://copyfree.org) ISC License.

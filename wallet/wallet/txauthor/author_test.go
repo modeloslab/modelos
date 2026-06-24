@@ -7,10 +7,10 @@ package txauthor
 import (
 	"testing"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/wire"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txrules"
-	"github.com/pearl-research-labs/pearl/wallet/wallet/txsizes"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/wire"
+	"github.com/modelos/modelos/wallet/wallet/txrules"
+	"github.com/modelos/modelos/wallet/wallet/txsizes"
 )
 
 func p2trOutputs(amounts ...btcutil.Amount) []*wire.TxOut {

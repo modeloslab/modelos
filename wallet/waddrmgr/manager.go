@@ -12,13 +12,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/btcutil"
-	"github.com/pearl-research-labs/pearl/node/btcutil/hdkeychain"
-	"github.com/pearl-research-labs/pearl/node/chaincfg"
-	"github.com/pearl-research-labs/pearl/spv/cache/lru"
-	"github.com/pearl-research-labs/pearl/wallet/internal/zero"
-	"github.com/pearl-research-labs/pearl/wallet/snacl"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
+	"github.com/modelos/modelos/node/btcutil"
+	"github.com/modelos/modelos/node/btcutil/hdkeychain"
+	"github.com/modelos/modelos/node/chaincfg"
+	"github.com/modelos/modelos/spv/cache/lru"
+	"github.com/modelos/modelos/wallet/internal/zero"
+	"github.com/modelos/modelos/wallet/snacl"
+	"github.com/modelos/modelos/wallet/walletdb"
 )
 
 const (

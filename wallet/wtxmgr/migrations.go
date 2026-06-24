@@ -1,8 +1,8 @@
 package wtxmgr
 
 import (
-	"github.com/pearl-research-labs/pearl/wallet/walletdb"
-	"github.com/pearl-research-labs/pearl/wallet/walletdb/migration"
+	"github.com/modelos/modelos/wallet/walletdb"
+	"github.com/modelos/modelos/wallet/walletdb/migration"
 )
 
 // versions is a list of the different database versions. The last entry should

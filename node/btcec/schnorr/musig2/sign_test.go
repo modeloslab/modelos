@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/pearl-research-labs/pearl/node/btcec"
+	"github.com/modelos/modelos/node/btcec"
 	"github.com/stretchr/testify/require"
 )
 

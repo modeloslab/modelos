@@ -8,7 +8,7 @@ import (
 	"math"
 	"testing"
 
-	. "github.com/pearl-research-labs/pearl/node/btcutil"
+	. "github.com/modelos/modelos/node/btcutil"
 )
 
 func TestAmountCreation(t *testing.T) {
@@ -53,7 +53,7 @@ func TestAmountCreation(t *testing.T) {
 			name:     "one hundred",
 			amount:   100,
 			valid:    true,
-			expected: 100 * GrainPerPearl,
+			expected: 100 * GrainPerMDL,
 		},
 		{
 			name:     "fraction",
@@ -65,13 +65,13 @@ func TestAmountCreation(t *testing.T) {
 			name:     "rounding up",
 			amount:   54.999999999999943157,
 			valid:    true,
-			expected: 55 * GrainPerPearl,
+			expected: 55 * GrainPerMDL,
 		},
 		{
 			name:     "rounding down",
 			amount:   55.000000000000056843,
 			valid:    true,
-			expected: 55 * GrainPerPearl,
+			expected: 55 * GrainPerMDL,
 		},
 
 		// Negative tests.

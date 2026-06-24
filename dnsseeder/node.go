@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/pearl-research-labs/pearl/node/wire"
+	"github.com/modelos/modelos/node/wire"
 )
 
 // Node struct contains details on one client

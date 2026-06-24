@@ -3,7 +3,7 @@ package chanutils
 import (
 	"sync"
 
-	"github.com/pearl-research-labs/pearl/spv/cache/lru"
+	"github.com/modelos/modelos/spv/cache/lru"
 )
 
 const (

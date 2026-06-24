@@ -57,7 +57,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pearl-research-labs/pearl/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/chaincfg/chainhash"
 )
 
 // MaxZKProofSize is the maximum size of a serialized ZK proof blob.

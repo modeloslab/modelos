@@ -22,7 +22,7 @@ export function parseSemver(input: string): SemVer | null {
   };
 }
 
-// Strips a known tag prefix (e.g. "pearl-wallet-v") before parsing.
+// Strips a known tag prefix (e.g. "modelos-wallet-v") before parsing.
 export function parseTaggedSemver(tag: string, prefix: string): SemVer | null {
   if (!tag) return null;
   const stripped = tag.startsWith(prefix) ? tag.slice(prefix.length) : tag;

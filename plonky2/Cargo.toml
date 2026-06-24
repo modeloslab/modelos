@@ -26,8 +26,8 @@ opt-level = 3
 [workspace.package]
 edition = "2021"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/pearl-research-labs/pearl"
-repository = "https://github.com/pearl-research-labs/pearl"
+homepage = "https://github.com/modelos/modelos"
+repository = "https://github.com/modelos/modelos"
 keywords = ["cryptography", "SNARK", "PLONK", "FRI", "plonky2"]
 categories = ["cryptography"]
 

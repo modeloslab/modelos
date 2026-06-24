@@ -5,7 +5,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@pearl/ui/components/select';
+} from '@modelos/ui/components/select';
 
 interface NetworkInfo {
     currentNetwork: string;

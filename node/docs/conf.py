@@ -18,7 +18,7 @@ from recommonmark.transform import AutoStructify
 
 # -- Project information -----------------------------------------------------
 
-project = "pearld"
+project = "modelosd"
 copyright = "2025, Pearl Research Labs"  # noqa: A001
 author = "Pearl Research Labs developers"
 
