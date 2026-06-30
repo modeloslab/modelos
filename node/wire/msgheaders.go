@@ -164,31 +164,32 @@ func NewMsgHeaders() *MsgHeaders {
 	}
 }
 
-// HasInconsistentCertificates reports whether any header in the batch has a
-// certificate presence that contradicts its AuxPoW status — the per-header
-// invariant the consensus rules enforce (see blockchain.checkBlockSanity):
+// HasInconsistentCertificates reports whether any header in the batch carries a
+// certificate combination the consensus rules would reject outright — used to drop
+// obviously-malformed HEADERS without deferring to full block validation.
 //
-//   - An AuxPoW (merged-mined) block carries a NULL certificate; its proof-of-work
-//     is the embedded Pearl proof, verified by VerifyAuxPow.
-//   - A native block carries a non-null ZK certificate.
+// It mirrors blockchain.checkBlockSanity EXACTLY, and no more strictly: the ONLY
+// invalid combination there is a NON-AuxPoW header with NO certificate (validate.go
+// returns ErrCertificateMissing). Everything else is permitted —
+//   - native block + ZK certificate (the normal case),
+//   - AuxPoW block + null certificate (its PoW is the embedded Pearl proof), and
+//   - AuxPoW block + certificate (consensus allows it; the cert version check is
+//     simply skipped for AuxPoW).
 //
-// Crucially, AuxPoW and native blocks are interleaved arbitrarily along the chain
-// (each block independently is one or the other), so a HEADERS batch legitimately
-// contains a MIX of certified and uncertified headers in any order. The previous
-// "a batch must not mix certified and uncertified headers" rule was therefore wrong
-// on an AuxPoW chain: it rejected every real batch that spanned both block kinds,
-// which is exactly what wedged fresh syncers (e.g. stuck at the first AuxPoW block).
-//
-// We validate the correct, order-independent invariant instead: cert == nil IFF the
-// header is an AuxPoW block. A peer that sends a non-AuxPoW header with no cert, or
-// an AuxPoW header carrying a cert, is malformed and rejected. Full certificate /
-// proof verification happens downstream in the blockchain layer.
+// AuxPoW and native blocks are interleaved arbitrarily along the chain, so a HEADERS
+// batch legitimately MIXES certified and uncertified headers in any order. The old
+// "a batch must not mix certified and uncertified headers" rule was wrong on an
+// AuxPoW chain — it rejected every real batch spanning both kinds and wedged fresh
+// syncers at the first AuxPoW block. We must also not over-correct: rejecting a
+// header the chain would ACCEPT (e.g. AuxPoW-with-cert) would itself wedge sync, so
+// we reject only the single combination consensus does.
 func HasInconsistentCertificates(headers []MsgHeader) bool {
 	for i := range headers {
 		isAuxPow := IsAuxPowBlock(&headers[i].BlockHeader)
 		hasCert := headers[i].BlockCertificate() != nil
-		if isAuxPow == hasCert {
-			// AuxPoW must have NO cert; non-AuxPoW must HAVE a cert.
+		if !isAuxPow && !hasCert {
+			// Non-AuxPoW header with no certificate — the one combination the
+			// consensus layer rejects (ErrCertificateMissing).
 			return true
 		}
 	}

@@ -632,17 +632,21 @@ func getNewAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	if cmd.AddressType != nil && *cmd.AddressType != "bech32" {
 		return nil, &ErrAddressTypeUnknown
 	}
-	usePQ := cmd.PQ != nil && *cmd.PQ
 	account, err := w.AccountNumber(keyScope, acctName)
 	if err != nil {
 		return nil, err
 	}
-	addr, err := w.NewAddress(account, keyScope, usePQ)
+	// Single-address model: always return the account's canonical receive
+	// address (external index 0) instead of rotating to a new index, so the
+	// address is stable and matches the single-address compute wallet. Funds
+	// previously received on other indices remain visible/spendable via the
+	// HD balance scan.
+	addr, err := w.PrimaryAddress(account, keyScope)
 	if err != nil {
 		return nil, err
 	}
 
-	// Return the new payment address string.
+	// Return the payment address string.
 	return addr.EncodeAddress(), nil
 }
 

@@ -338,9 +338,12 @@ func TestFundPsbt(t *testing.T) {
 			require.Len(t, b32d.Bip32Path, 5, "derivation path len")
 			require.Len(t, b32d.PubKey, 33, "pubkey len")
 
-			// The third item should be the branch and should belong
-			// to a change output.
-			require.EqualValues(t, 1, b32d.Bip32Path[3])
+			// Single-address model: change is sent to the account's
+			// primary receive address (external branch 0, index 0)
+			// rather than the internal change branch (1). So the branch
+			// component is 0 and the index component is 0.
+			require.EqualValues(t, 0, b32d.Bip32Path[3], "change branch")
+			require.EqualValues(t, 0, b32d.Bip32Path[4], "change index")
 
 			assertChangeOutputScope(
 				t, changeTxOut.PkScript, tc.changeKeyScope,

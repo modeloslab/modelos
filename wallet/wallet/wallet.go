@@ -1751,6 +1751,39 @@ func (w *Wallet) CalculateAccountBalances(account uint32, confirms int32) (Balan
 // from a wallet for a particular key-chain scope.  If the address has already
 // been used (there is at least one transaction spending to it in the
 // blockchain or pearld mempool), the next chained address is returned.
+// PrimaryAddress returns the account's canonical receive address — external
+// index 0 (m/86'/coin'/account'/0/0). Single-address model: the wallet always
+// presents this one stable address for receiving instead of rotating to a fresh
+// index, so every app sharing the phrase shows the same address and balance.
+// Funds that landed on other indices are still seen via the HD balance scan and
+// are spendable; they're simply not handed out as new receive addresses.
+func (w *Wallet) PrimaryAddress(account uint32, scope waddrmgr.KeyScope) (btcutil.Address, error) {
+	manager, err := w.Manager.FetchScopedKeyManager(scope)
+	if err != nil {
+		return nil, err
+	}
+	kp := waddrmgr.DerivationPath{
+		InternalAccount: account,
+		Account:         account,
+		Branch:          waddrmgr.ExternalBranch,
+		Index:           0,
+	}
+	var addr btcutil.Address
+	err = walletdb.Update(w.db, func(tx walletdb.ReadWriteTx) error {
+		ns := tx.ReadWriteBucket(waddrmgrNamespaceKey)
+		maddr, err := manager.DeriveFromKeyPath(ns, kp, false)
+		if err != nil {
+			return err
+		}
+		addr = maddr.Address()
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return addr, nil
+}
+
 func (w *Wallet) CurrentAddress(account uint32, scope waddrmgr.KeyScope) (btcutil.Address, error) {
 	chainClient, err := w.requireChainClient()
 	if err != nil {

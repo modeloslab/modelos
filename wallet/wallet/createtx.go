@@ -477,26 +477,36 @@ func (w *Wallet) addrMgrWithChangeSource(dbtx walletdb.ReadWriteTx,
 	addrmgrNs := dbtx.ReadWriteBucket(waddrmgrNamespaceKey)
 
 	newChangeScript := func() ([]byte, error) {
-		// Derive the change output script. As a hack to allow spending
-		// from the imported account, change addresses are created from
-		// account 0.
-		var (
-			changeAddr btcutil.Address
-			err        error
-		)
+		// Single-address model: send change back to the account's primary
+		// receive address (external index 0, m/86'/coin'/account'/0/0)
+		// rather than a fresh internal change address. This keeps every
+		// wallet's on-chain footprint on ONE address per phrase, so the
+		// desktop wallet and the single-address compute wallet always agree
+		// on the balance and present the same address to users. (Change to a
+		// rotating internal branch is what previously made funds appear on
+		// addresses the compute wallet didn't watch.)
+		//
+		// Imported accounts have no derivable change of their own, so — as
+		// before — their change is taken from the default account (0).
+		changeAccount := account
 		if account == waddrmgr.ImportedAddrAccount {
-			changeAddr, err = w.newChangeAddress(
-				addrmgrNs, 0, *changeKeyScope, false,
-			)
-		} else {
-			changeAddr, err = w.newChangeAddress(
-				addrmgrNs, account, *changeKeyScope, false,
-			)
+			changeAccount = 0
 		}
+		kp := waddrmgr.DerivationPath{
+			InternalAccount: changeAccount,
+			Account:         changeAccount,
+			Branch:          waddrmgr.ExternalBranch,
+			Index:           0,
+		}
+		scopedMgr, err := w.Manager.FetchScopedKeyManager(*changeKeyScope)
 		if err != nil {
 			return nil, err
 		}
-		return txscript.PayToAddrScript(changeAddr)
+		changeMAddr, err := scopedMgr.DeriveFromKeyPath(addrmgrNs, kp, false)
+		if err != nil {
+			return nil, err
+		}
+		return txscript.PayToAddrScript(changeMAddr.Address())
 	}
 
 	return addrmgrNs, &txauthor.ChangeSource{

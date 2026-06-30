@@ -62,6 +62,18 @@ func verifyZKCertificateInner(header *wire.BlockHeader, c *wire.ZKCertificate, n
 			c.Hash, blockHash)
 	}
 
+	// Commitment binds the header to the certificate's PublicData via
+	// SHA256d(version_LE || PublicData). The certificate version is V1 here for
+	// both native modelOS blocks and the embedded Pearl parent on the AuxPoW path.
+	//
+	// AuxPoW NOTE: a post-MoE (V2) Pearl chain commits with a version-2 prefix.
+	// modelOS deliberately accepts ONLY the V1 commitment — aux pools MUST normalise
+	// the embedded Pearl header's commitment to the V1 form before submitauxblock
+	// (the committed PublicData is byte-identical to V1, so this rewrites only the
+	// 32-byte commitment field and is sound — the real Pearl block sent to pearld
+	// keeps its native V2 commitment). Accepting both versions was rejected because
+	// it would let one proof mint two distinct same-height blocks (malleability);
+	// native-V2 acceptance is deferred to a future coordinated hard fork.
 	certCommitment := c.ProofCommitment()
 	if header.ProofCommitment != certCommitment {
 		return fmt.Errorf("proof commitment mismatch: header has %s, certificate has %s",

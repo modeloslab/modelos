@@ -147,8 +147,18 @@ func TestTxToOutputsDryRun(t *testing.T) {
 		t.Fatalf("unable to get addresses: %v", err)
 	}
 
-	if len(addresses) != 2 {
-		t.Fatalf("expected 2 addresses, found %v", len(addresses))
+	// Single-address model: change is sent back to the account's primary
+	// receive address (external index 0) rather than a fresh internal change
+	// address, so no NEW address is created — the count stays at 1.
+	if len(addresses) != 1 {
+		t.Fatalf("expected 1 address (change reuses primary), found %v",
+			len(addresses))
+	}
+
+	// The change output must pay the primary receive address itself.
+	if !bytes.Equal(change3.PkScript, taprootAddr) {
+		t.Fatalf("change output is not the primary address: change goes " +
+			"to a different script than CurrentAddress(0)")
 	}
 
 	err = validateMsgTx(tx.Tx, tx.PrevScripts, tx.PrevInputValues)
@@ -258,8 +268,9 @@ func addTxAndCredit(t *testing.T, w *Wallet, tx *wire.MsgTx,
 func TestInputYield(t *testing.T) {
 	t.Parallel()
 
-	// Use a Taproot address for Taproot-only wallet
-	addr, _ := btcutil.DecodeAddress("prl1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rus7mymn2", &chaincfg.MainNetParams)
+	// Use a Taproot address for Taproot-only wallet (modelOS mdl1 mainnet HRP).
+	addr, err := btcutil.DecodeAddress("mdl1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rus02trzg", &chaincfg.MainNetParams)
+	require.NoError(t, err)
 	pkScript, err := txscript.PayToAddrScript(addr)
 	require.NoError(t, err)
 

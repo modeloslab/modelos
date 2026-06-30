@@ -66,8 +66,18 @@ unsafe fn verify_zk_proof_inner(
             }
         };
 
-        // Acquire circuit cache (immutable - verifier doesn't modify cache)
-        let cache = acquire_cache();
+        // Acquire circuit cache (immutable - verifier doesn't modify cache). A
+        // missing/corrupt cache returns a clean, actionable error instead of
+        // panicking and poisoning the verifier for all subsequent blocks. Return
+        // code 2 (system error) — not 1 (proof rejected) — so operators can tell an
+        // infra/cache fault from a genuinely invalid proof. Both reject the block.
+        let cache = match acquire_cache() {
+            Ok(c) => c,
+            Err(e) => {
+                set_error_msg(error_msg_out, &format!("{}", e));
+                return 2;
+            }
+        };
 
         // Verify using cached circuits only (no compilation)
         match verify::verify_block_cached_circuits_only(&params, &zk_proof, &cache, nbits_override) {
@@ -256,7 +266,15 @@ pub unsafe extern "C" fn verify_zk_proof_v1(
         let public_data = &zk_proof_ref.public_data[..zk_proof_ref.public_data_len];
         let proof_data = slice::from_raw_parts(zk_proof_ref.proof_blob, zk_proof_ref.proof_blob_len);
 
-        let cache = crate::common::acquire_v1_cache();
+        let cache = match crate::common::acquire_v1_cache() {
+            Ok(c) => c,
+            Err(e) => {
+                // Code 2 (system error), not 1 (proof rejected): a cache fault is
+                // infra, not a bad proof. Both reject the block.
+                set_error_msg(error_msg_out, &format!("{}", e));
+                return 2;
+            }
+        };
 
         match zk_pow::v1::verify_v1(&block_header_bytes, public_data, proof_data, &cache, None) {
             Ok(_) => {

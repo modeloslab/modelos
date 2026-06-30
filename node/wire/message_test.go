@@ -83,7 +83,7 @@ func TestMessage(t *testing.T) {
 		prlnet PearlNet // Network to use for wire encoding
 		bytes  int      // Expected num bytes read/written
 	}{
-		{msgVersion, msgVersion, pver, MainNet, 127},
+		{msgVersion, msgVersion, pver, MainNet, 129}, // user agent "/modeloswire:0.5.0/" (19B) — 2B longer than the old pearl UA
 		{msgVerack, msgVerack, pver, MainNet, 24},
 		{msgGetAddr, msgGetAddr, pver, MainNet, 24},
 		{msgAddr, msgAddr, pver, MainNet, 25},

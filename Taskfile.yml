@@ -9,10 +9,14 @@ tasks:
     desc: Generate verifier circuit cache (one-time, ~20s)
     run: once
     dir: zk-pow
+    # Write to the EXACT paths embedded via include_bytes! (v2_cache.bin + v1_cache.bin).
+    # Writing a different filename silently embeds the stale committed cache → circuit
+    # mismatch ("Invalid cache magic bytes") that wedges the verifier.
     status:
-      - test -s src/circuit/cache.bin
+      - test -s src/circuit/v2_cache.bin
+      - test -s src/v1/v1_cache.bin
     cmds:
-      - cargo run --release --no-default-features --bin build_cache src/circuit/cache.bin
+      - cargo run --release --no-default-features --bin build_cache src/circuit/v2_cache.bin src/v1/v1_cache.bin
 
   build:zk-gobind:
     desc: Build the Rust ZK verification library for Go FFI

@@ -133,7 +133,9 @@ pub unsafe extern "C" fn prove_plain_proof(
     // never competes at normal priority with mining + share submission.
     let result = match catch_panic(move || {
         prove_pool().install(move || {
-            let mut cache = acquire_cache();
+            // Propagate a missing/corrupt-cache error as a clean prove error
+            // instead of panicking and poisoning the cache for all callers.
+            let mut cache = acquire_cache()?;
             prove::zk_prove_plain_proof(header, &plain_proof, &mut cache, false)
         })
     }) {

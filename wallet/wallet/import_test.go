@@ -70,8 +70,8 @@ var (
 		accountIndex:       0,
 		addrType:           waddrmgr.TaprootPubKey,
 		expectedScope:      waddrmgr.KeyScopeBIP0086,
-		expectedAddr:       "tprl1pmxa4c2w8cp6dq0j65sm4ha5qglr83xuwqhjlnzgr9etj8l9n5rrqgkhc6a",
-		expectedChangeAddr: "tprl1p23muxzw30p5gvc8sthgkfckcqzxnf5rzpvak6zl9x0gjeqnxgu0qfcx3kk",
+		expectedAddr:       "tmdl1pmxa4c2w8cp6dq0j65sm4ha5qglr83xuwqhjlnzgr9etj8l9n5rrqe8cqtl",
+		expectedChangeAddr: "tmdl1p23muxzw30p5gvc8sthgkfckcqzxnf5rzpvak6zl9x0gjeqnxgu0qcfff85",
 	}, {
 		name: "taproot with different account index",
 		masterPriv: "tprv8ZgxMBicQKsPeWwrFuNjEGTTDSY4mRLwd2KDJAPGa1AY" +
@@ -80,8 +80,8 @@ var (
 		accountIndex:       1,
 		addrType:           waddrmgr.TaprootPubKey,
 		expectedScope:      waddrmgr.KeyScopeBIP0086,
-		expectedAddr:       "tprl1pqquds2zajq7s32crdmqd6v2xkgl57mr2wftwq35zm77nepn2mexsv5akje",
-		expectedChangeAddr: "tprl1p9sk7jvzr2heekznre0jjgzvyepzlz5cw8uydacthu8zp2fdny2tqfsljvf",
+		expectedAddr:       "tmdl1pqquds2zajq7s32crdmqd6v2xkgl57mr2wftwq35zm77nepn2mexsa9jwrm",
+		expectedChangeAddr: "tmdl1p9sk7jvzr2heekznre0jjgzvyepzlz5cw8uydacthu8zp2fdny2tqcps2at",
 	}}
 )
 

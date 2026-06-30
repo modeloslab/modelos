@@ -157,7 +157,13 @@ unsafe fn mine_and_prove(
         }
     };
 
-    let mut cache = acquire_cache();
+    let mut cache = match acquire_cache() {
+        Ok(c) => c,
+        Err(e) => {
+            set_error_msg(error_msg_out, &format!("Mining cache error: {}", e));
+            return None;
+        }
+    };
     match catch_panic(|| prove::zk_prove_plain_proof(header, &proof, &mut cache, false)) {
         Ok(Ok(r)) => Some(r),
         Ok(Err(e)) => {
