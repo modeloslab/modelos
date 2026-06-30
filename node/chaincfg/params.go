@@ -305,12 +305,22 @@ var MainNetParams = Params{
 	MaxSupportedTxVersion: 4,
 	MaxTimeOffsetMinutes:  5,
 
-	// Checkpoints ordered from oldest to newest.
-	// Empty for the fresh-genesis launch: a checkpoint above the current tip
-	// makes isCurrent() return false (tip.height < checkpoint.Height) → the node
-	// stays in IBD and getblocktemplate is refused past block 1.  Re-add real
-	// checkpoints only once the chain has meaningful height.
-	Checkpoints: nil,
+	// Checkpoints ordered from oldest to newest. Each hash was taken from the
+	// production mainnet node's best chain (verified via getblockheader
+	// confirmations > 0). They anchor history so a light (SPV) wallet cannot be
+	// fed a forged chain below the latest checkpoint, and the node rejects any
+	// reorg that would rewrite a checkpointed block. Keep the HIGHEST checkpoint
+	// safely BELOW the live tip — a checkpoint above the tip makes isCurrent()
+	// return false (tip.height < checkpoint.Height) → the node stays in IBD and
+	// getblocktemplate is refused. (Tip was 18866 when these were added.)
+	Checkpoints: []Checkpoint{
+		{Height: 2000, Hash: newHashFromStr("db2442bfbcd5a9814135aed51cb9e6337d4880a12ab4230c94b1ce60475694bb")},
+		{Height: 5000, Hash: newHashFromStr("1e16f1bef355dae580546bdf37116be40683f050abf6f7552fd3ca5146467a26")},
+		{Height: 8000, Hash: newHashFromStr("76cb6d65a9ce5a787a8fa9a91efcf238e3fd4dc7c0ad2264f6a501bad95d8831")},
+		{Height: 11000, Hash: newHashFromStr("1a01af1039be3a2f71fa1e330f9be1eccf871180dd1a640a8025c6f92cbb886b")},
+		{Height: 14000, Hash: newHashFromStr("015eb33ed54a91525408e190ca058c2b47a4473eb660b9c5c198fa3052868fe4")},
+		{Height: 17000, Hash: newHashFromStr("d7fcd969038ff2842ede030be0df3def62861069ae15a30cca20c659ddc5747b")},
+	},
 
 	// Consensus rule change deployments.
 	//

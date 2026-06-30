@@ -224,6 +224,7 @@ miner/pearl-gemm/csrc/gemm/static_switch_noisingB.h
 .env.production
 .env.local
 .env.*.local
+.env.bak*
 # Service-account keys / Vertex SA JSON — server-only, never commit or sync.
 secrets/
 

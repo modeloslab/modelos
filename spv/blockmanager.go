@@ -44,6 +44,21 @@ const (
 	// maxCFCheckptsPerQuery is the maximum number of filter header
 	// checkpoints we can query for within a single message over the wire.
 	maxCFCheckptsPerQuery = wire.MaxCFHeadersPerMsg / wire.CFCheckptInterval
+
+	// stallSampleInterval is how often we check whether block-header sync has
+	// made forward progress.
+	stallSampleInterval = 30 * time.Second
+
+	// maxStallDuration is how long the chosen sync peer may go without
+	// advancing our header tip before we treat it as stalled, penalize it,
+	// and rotate to another peer. This is what lets the wallet recover when a
+	// peer is stuck on a non-canonical reorg fork (or advertises a fake height
+	// it can't actually serve) instead of looping on it forever.
+	maxStallDuration = 90 * time.Second
+
+	// syncPeerCooldown is how long a peer that stalled as our sync peer is
+	// excluded from being re-selected as the sync peer.
+	syncPeerCooldown = 10 * time.Minute
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
@@ -203,6 +218,15 @@ type blockManager struct { // nolint:maligned
 	startHeader    *headerlist.Node
 	nextCheckpoint *chaincfg.Checkpoint
 	lastRequested  chainhash.Hash
+
+	// Stall detection for the sync peer. lastSyncProgress is the time our
+	// header tip last advanced; lastTipHeight is the height at the previous
+	// stall sample. recentlyFailedSync maps a peer address → the time it
+	// stalled as sync peer, so startSync can exclude it for syncPeerCooldown.
+	// Accessed only from the blockHandler goroutine (no extra lock needed).
+	lastSyncProgress   time.Time
+	lastTipHeight      int32
+	recentlyFailedSync map[string]time.Time
 }
 
 // newBlockManager returns a new block manager.  Use Start to begin
@@ -224,7 +248,8 @@ func newBlockManager(cfg *blockManagerCfg) (*blockManager, error) {
 		reorgList: headerlist.NewBoundedMemoryChain(
 			numMaxMemHeaders,
 		),
-		quit: make(chan struct{}),
+		recentlyFailedSync: make(map[string]time.Time),
+		quit:               make(chan struct{}),
 	}
 
 	// Next we'll create the two signals that goroutines will use to wait
@@ -1970,6 +1995,16 @@ func (b *blockManager) blockHandler() {
 	defer b.wg.Done()
 
 	candidatePeers := list.New()
+
+	// Periodically sample whether block-header sync is making progress so a
+	// sync peer stuck on a non-canonical fork (or advertising a fake height)
+	// can be detected and replaced.
+	b.lastSyncProgress = time.Now()
+	_, h, _ := b.cfg.BlockHeaders.ChainTip()
+	b.lastTipHeight = int32(h)
+	stallTicker := time.NewTicker(stallSampleInterval)
+	defer stallTicker.Stop()
+
 out:
 	for {
 		// Now check peer messages and quit channels.
@@ -1993,12 +2028,76 @@ out:
 					"handler: %T", msg)
 			}
 
+		case <-stallTicker.C:
+			b.handleStallSample(candidatePeers)
+
 		case <-b.quit:
 			break out
 		}
 	}
 
 	log.Trace("Block handler done")
+}
+
+// handleStallSample checks whether our header tip has advanced since the last
+// sample. If we have a sync peer, are still behind it, and the tip has not moved
+// for longer than maxStallDuration, the sync peer is treated as stalled: it is
+// put on a cooldown (so startSync won't immediately re-pick it) and disconnected,
+// which clears the sync peer and lets startSync rotate to a different peer that
+// can actually serve the canonical chain.
+//
+// This NEVER changes the chain-selection rule: reorgs still require strictly more
+// work (handleHeadersMsg / ShouldChangeTip). It only changes WHICH peer we ask. A
+// healthy sync advances the tip every sample, so this path never fires during
+// normal operation.
+func (b *blockManager) handleStallSample(peers *list.List) {
+	// Lazily evict expired cooldown entries.
+	now := time.Now()
+	for addr, t := range b.recentlyFailedSync {
+		if now.Sub(t) >= syncPeerCooldown {
+			delete(b.recentlyFailedSync, addr)
+		}
+	}
+
+	syncPeer := b.SyncPeer()
+	if syncPeer == nil {
+		// Nothing to babysit; make sure a sync attempt is running.
+		b.startSync(peers)
+		return
+	}
+
+	// If we're fully caught up to this peer, there's nothing to stall on.
+	_, tipHeight, err := b.cfg.BlockHeaders.ChainTip()
+	if err != nil {
+		return
+	}
+	if int32(tipHeight) >= syncPeer.LastBlock() {
+		b.lastTipHeight = int32(tipHeight)
+		b.lastSyncProgress = now
+		return
+	}
+
+	// Progress since the last sample resets the stall timer.
+	if int32(tipHeight) > b.lastTipHeight {
+		b.lastTipHeight = int32(tipHeight)
+		b.lastSyncProgress = now
+		return
+	}
+
+	// No progress while still behind. If we've been stalled long enough, the
+	// sync peer is bad (fork/fake-height/unresponsive) — penalize + rotate.
+	if now.Sub(b.lastSyncProgress) >= maxStallDuration {
+		log.Warnf("Sync peer %s stalled at height %d (no progress for %v) "+
+			"-- cooling down and switching peers", syncPeer.Addr(),
+			tipHeight, now.Sub(b.lastSyncProgress).Truncate(time.Second))
+
+		b.recentlyFailedSync[syncPeer.Addr()] = now
+		b.lastSyncProgress = now
+
+		// Disconnecting triggers donePeerMsg → syncPeer cleared → startSync
+		// picks a different (non-cooldown) candidate.
+		syncPeer.Disconnect()
+	}
 }
 
 // SyncPeer returns the current sync peer.
@@ -2019,6 +2118,18 @@ func (b *blockManager) isSyncCandidate(sp *ServerPeer) bool {
 // findNextHeaderCheckpoint returns the next checkpoint after the passed height.
 // It returns nil when there is not one either because the height is already
 // later than the final checkpoint or there are none for the current network.
+// latestCheckpointHeight returns the height of the final hardcoded checkpoint for
+// the active network, or -1 if there are none. Blocks at or below this height have
+// their ancestry pinned by a checkpoint hash, so the SPV client can skip per-block
+// proof verification for them (assume-valid) and fully verify only above it.
+func (b *blockManager) latestCheckpointHeight() int32 {
+	checkpoints := b.cfg.ChainParams.Checkpoints
+	if len(checkpoints) == 0 {
+		return -1
+	}
+	return checkpoints[len(checkpoints)-1].Height
+}
+
 func (b *blockManager) findNextHeaderCheckpoint(height int32) *chaincfg.Checkpoint {
 	// There is no next checkpoint if there are none for this current
 	// network.
@@ -2105,6 +2216,17 @@ func (b *blockManager) startSync(peers *list.List) {
 		if sp.LastBlock() < int32(bestHeight) {
 			peers.Remove(e)
 			continue
+		}
+
+		// Skip peers that recently stalled as our sync peer (e.g. stuck on a
+		// non-canonical fork or advertising a height they can't serve). They
+		// stay connected as normal peers but won't be re-chosen to drive sync
+		// until their cooldown expires.
+		if t, ok := b.recentlyFailedSync[sp.Addr()]; ok {
+			if time.Since(t) < syncPeerCooldown {
+				continue
+			}
+			delete(b.recentlyFailedSync, sp.Addr())
 		}
 
 		// TODO: Use a better algorithm to choose the best peer.
@@ -2843,8 +2965,27 @@ func (b *blockManager) checkHeaderSanity(blockHeader *wire.BlockHeader,
 		&b.cfg.ChainParams,
 	)
 
+	// Proof-of-work (= ZK / AuxPoW proof) verification policy — "assume-valid"
+	// anchored on the hardcoded checkpoints:
+	//
+	//   - At or below the latest checkpoint, the block's ancestry is already
+	//     pinned by a checkpoint hash baked into the binary, so re-verifying each
+	//     historical ZK proof adds no security — we skip it (BFNoPoWCheck) for a
+	//     fast initial sync.
+	//   - ABOVE the latest checkpoint we FULLY verify every block's proof
+	//     (zkpow.VerifyCertificate / AuxPoW), so recent blocks are trustless and a
+	//     malicious peer cannot feed us a forged-work chain past the checkpoint.
+	//   - SimNet always skips (no real PoW).
+	//
+	// Full verification requires the wallet to be built with `-tags zkpow` + the
+	// FFI; the build does that. (Without the tag the stub errors, which is the
+	// intended fail-closed signal that a non-verifying build shouldn't run mainnet
+	// past the checkpoint.)
+	blockHeight := prevNodeHeight + 1
+	lastCheckpoint := b.latestCheckpointHeight()
+
 	var flags blockchain.BehaviorFlags
-	if b.cfg.ChainParams.Net == wire.SimNet {
+	if b.cfg.ChainParams.Net == wire.SimNet || blockHeight <= lastCheckpoint {
 		flags |= blockchain.BFNoPoWCheck
 	}
 
