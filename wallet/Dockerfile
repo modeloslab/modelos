@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM rust:1.95.0-alpine AS rust-toolchain
+FROM rust:1.96.0-alpine AS rust-toolchain
 
-FROM golang:1.26.1-alpine AS toolchain
+FROM golang:1.26.4-alpine AS toolchain
 
 RUN apk add --no-cache curl build-base musl-dev openssl-dev pkgconfig
 
