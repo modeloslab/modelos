@@ -636,12 +636,22 @@ func getNewAddress(icmd interface{}, w *wallet.Wallet) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Single-address model: always return the account's canonical receive
-	// address (external index 0) instead of rotating to a new index, so the
-	// address is stable and matches the single-address compute wallet. Funds
-	// previously received on other indices remain visible/spendable via the
-	// HD balance scan.
-	addr, err := w.PrimaryAddress(account, keyScope)
+	// Address selection:
+	//   - default (rotating): derive the next external HD address so each call
+	//     returns a fresh, unique address. This is standard Bitcoin behavior and
+	//     is required by exchanges / payment processors that assign a distinct
+	//     deposit address per customer.
+	//   - --singleaddress: always return the account's canonical receive address
+	//     (external index 0) so it is stable.
+	// Either way, funds received on any derived index remain visible/spendable
+	// via the wallet's HD balance scan.
+	usePQ := cmd.PQ != nil && *cmd.PQ
+	var addr btcutil.Address
+	if w.SingleAddress {
+		addr, err = w.PrimaryAddress(account, keyScope)
+	} else {
+		addr, err = w.NewAddress(account, keyScope, usePQ)
+	}
 	if err != nil {
 		return nil, err
 	}

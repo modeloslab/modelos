@@ -125,6 +125,12 @@ var (
 type Wallet struct {
 	publicPassphrase []byte
 
+	// SingleAddress, when true, makes getnewaddress return the account's
+	// primary (external index 0) receive address instead of rotating the HD
+	// external chain. Default false (standard rotating behavior). Set from the
+	// --singleaddress config flag at startup.
+	SingleAddress bool
+
 	// Data stores
 	db      walletdb.DB
 	Manager *waddrmgr.Manager

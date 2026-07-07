@@ -95,6 +95,7 @@ func walletMain() error {
 	}
 
 	loader.RunAfterLoad(func(w *wallet.Wallet) {
+		w.SingleAddress = cfg.SingleAddress
 		startWalletRPCServices(w, rpcs, legacyRPCServer)
 	})
 

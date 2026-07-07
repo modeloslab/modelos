@@ -58,6 +58,7 @@ type config struct {
 	TestNet2        bool                    `long:"testnet2" description:"Use the test network v2 (default mainnet)"`
 	SimNet          bool                    `long:"simnet" description:"Use the simulation test network (default mainnet)"`
 	SigNet          bool                    `long:"signet" description:"Use the signet test network (default mainnet)"`
+	SingleAddress   bool                    `long:"singleaddress" description:"Return a single stable receive address (external index 0) from getnewaddress instead of rotating the HD chain. Default false (standard rotating behavior, required by exchanges/payment processors). Enable only for a single-address deployment."`
 	SigNetChallenge string                  `long:"signetchallenge" description:"Connect to a custom signet network defined by this challenge instead of using the global default signet test network -- Can be specified multiple times"`
 	SigNetSeedNode  []string                `long:"signetseednode" description:"Specify a seed node for the signet network instead of using the global default signet network seed nodes"`
 	RegressionNet   bool                    `long:"regtest" description:"Use the regression test network (default mainnet)"`
