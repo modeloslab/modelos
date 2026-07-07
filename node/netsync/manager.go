@@ -1631,6 +1631,12 @@ func (sm *SyncManager) handleBlockchainNotification(notification *blockchain.Not
 			sm.peerNotifier.AnnounceNewTransactions(acceptedTxs)
 		}
 
+		// A new tip (including via reorg) may have changed the block that
+		// confirmed an inference bounty, invalidating any mempool claim bound
+		// to the old block hash. Purge such stale claims so they cannot fail
+		// getblocktemplate and stall mining.
+		sm.txMemPool.PurgeStaleInferenceClaims()
+
 		// Register block with the fee estimator, if it exists.
 		if sm.feeEstimator != nil {
 			err := sm.feeEstimator.RegisterBlock(block)

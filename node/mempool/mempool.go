@@ -69,6 +69,14 @@ type Config struct {
 	// transaction output information.
 	FetchUtxoView func(*btcutil.Tx) (*blockchain.UtxoViewpoint, error)
 
+	// CheckInferenceBountySpends validates that an inference-bounty-spending
+	// transaction is still valid against the current chain tip. It is used to
+	// reject stale inference claims (e.g. whose confirming block was reorged,
+	// so proof.BlockHash no longer matches) — including on reorg re-add — and
+	// to purge them from the pool, so they cannot poison block-template
+	// creation. May be nil (checks are skipped when unset).
+	CheckInferenceBountySpends func(*btcutil.Tx, *blockchain.UtxoViewpoint) error
+
 	// BestHeight defines the function to use to access the block height of
 	// the current best chain.
 	BestHeight func() int32
@@ -521,6 +529,46 @@ func (mp *TxPool) RemoveTransaction(tx *btcutil.Tx, removeRedeemers bool) {
 	mp.mtx.Lock()
 	mp.removeTransaction(tx, removeRedeemers)
 	mp.mtx.Unlock()
+}
+
+// PurgeStaleInferenceClaims removes inference-bounty-spending transactions from
+// the pool that are no longer valid against the current tip (e.g. after a reorg
+// changed the block that confirmed the bounty, invalidating a claim bound to
+// the old block hash). It is safe and cheap to call on every new best block and
+// is a no-op when no covenant checker is configured. This prevents a stale
+// claim, already accepted before a reorg, from failing getblocktemplate.
+//
+// This function is safe for concurrent access.
+func (mp *TxPool) PurgeStaleInferenceClaims() {
+	if mp.cfg.CheckInferenceBountySpends == nil {
+		return
+	}
+	mp.mtx.Lock()
+	defer mp.mtx.Unlock()
+
+	var stale []*btcutil.Tx
+	for _, txD := range mp.pool {
+		// Only v4 inference-proof (claim) txs bind to a confirming block hash and
+		// can go reorg-stale in this hygiene sweep. v3 create-bounty txs spend no
+		// bounty and can never be stale — re-validating them (a FetchUtxoView per
+		// tx, every block) would be wasted work an attacker could amplify by
+		// parking cheap v3 txs, so they are skipped. Stale v1 refunds are caught
+		// by the definitive block-template skip (mining.go), so this pool-hygiene
+		// sweep does not need to scan every tx.
+		if txD.Tx.MsgTx().Version != wire.TxVersionInferenceProof {
+			continue
+		}
+		utxoView, err := mp.cfg.FetchUtxoView(txD.Tx)
+		if err != nil {
+			continue
+		}
+		if err := mp.cfg.CheckInferenceBountySpends(txD.Tx, utxoView); err != nil {
+			stale = append(stale, txD.Tx)
+		}
+	}
+	for _, tx := range stale {
+		mp.removeTransaction(tx, true)
+	}
 }
 
 // RemoveDoubleSpends removes all transactions which spend outputs spent by the
@@ -1558,6 +1606,21 @@ func (mp *TxPool) checkMempoolAcceptance(tx *btcutil.Tx,
 			return nil, chainRuleError(cerr)
 		}
 		return nil, err
+	}
+
+	// Reject inference-bounty claims/refunds that are no longer valid against
+	// the current tip (e.g. a reorg changed the confirming block, so
+	// proof.BlockHash no longer matches). This keeps stale claims out of the
+	// pool — including on reorg re-add via MaybeAcceptTransaction — so they can
+	// never fail getblocktemplate. Covenant inputs bypass the script engine, so
+	// this check is not covered by ValidateTransactionScripts above.
+	if mp.cfg.CheckInferenceBountySpends != nil {
+		if err := mp.cfg.CheckInferenceBountySpends(tx, utxoView); err != nil {
+			if cerr, ok := err.(blockchain.RuleError); ok {
+				return nil, chainRuleError(cerr)
+			}
+			return nil, err
+		}
 	}
 
 	result := &MempoolAcceptResult{

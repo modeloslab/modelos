@@ -22,6 +22,11 @@ const (
 	Minor uint = 0
 	Patch uint = 7
 
+	// Revision is an optional 4th version component for hotfix / sub-patch
+	// releases (e.g. 1.0.7.5). When 0 the version string stays 3-part
+	// (Major.Minor.Patch).
+	Revision uint = 5
+
 	// PreRelease MUST only contain characters from semanticAlphabet
 	// per the semantic versioning spec.
 	PreRelease = ""
@@ -35,6 +40,11 @@ var Build string
 // semantic versioning 2.0.0 spec (http://semver.org/).
 func Version() string {
 	v := fmt.Sprintf("%d.%d.%d", Major, Minor, Patch)
+
+	// Append the 4th component for hotfix / sub-patch releases (e.g. 1.0.7.5).
+	if Revision > 0 {
+		v = fmt.Sprintf("%s.%d", v, Revision)
+	}
 
 	if preRelease := normalizeVerString(PreRelease); preRelease != "" {
 		v = fmt.Sprintf("%s-%s", v, preRelease)

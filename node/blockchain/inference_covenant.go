@@ -335,6 +335,65 @@ func (b *BlockChain) checkInferenceBountySpends(tx *btcutil.Tx, node *blockNode,
 	return nil
 }
 
+// CheckInferenceBountySpendsAgainstTip validates any inference-bounty-spending
+// inputs of tx against the CURRENT best-chain tip using the supplied view. It
+// returns an error if a bound claim or refund is no longer valid at the tip —
+// most importantly when a reorg has changed the block that confirmed the bounty
+// so the claim's proof.BlockHash no longer matches the confirming block. Txs
+// that don't spend an inference bounty return nil.
+//
+// This is a lightweight pre-filter (spend height = tip+1, mirroring the block
+// that would include the tx) used by the mempool — to reject/evict stale claims,
+// including on reorg re-add — and by the block-template generator — to SKIP them.
+// It ensures a single reorg-stale inference claim can never fail the whole
+// getblocktemplate and halt mining during reorgs.
+func (b *BlockChain) CheckInferenceBountySpendsAgainstTip(tx *btcutil.Tx, view *UtxoViewpoint) error {
+	// Resolve the tip lazily — only a tx that actually spends a bounty pays the
+	// cost of reading it. This keeps the check cheap enough to run on EVERY
+	// candidate tx regardless of version, which is required because a REFUND is
+	// a plain v1 tx (not v3/v4) yet can go reorg-stale on a height-reducing
+	// reorg; a version gate here would let a stale refund abort getblocktemplate.
+	var tip *blockNode
+	var spendHeight int32
+	for _, txIn := range tx.MsgTx().TxIn {
+		entry := view.LookupEntry(txIn.PreviousOutPoint)
+		if entry == nil {
+			continue
+		}
+		params, ok := ParseInferenceBountyScript(entry.PkScript())
+		if !ok {
+			continue
+		}
+		if tip == nil {
+			tip = b.bestChain.Tip()
+			if tip == nil {
+				return nil
+			}
+			spendHeight = tip.height + 1
+		}
+		confirmHeight := entry.BlockHeight()
+		ancestor := tip.Ancestor(confirmHeight)
+		if ancestor == nil {
+			return ruleError(ErrBadTxOutValue,
+				"inference bounty: cannot resolve the confirming block at tip")
+		}
+		confirmHash := ancestor.Hash()
+
+		var refundSig [64]byte
+		if w := txIn.Witness; len(w) >= 1 && len(w[0]) == 64 {
+			copy(refundSig[:], w[0])
+		}
+
+		op := txIn.PreviousOutPoint
+		if err := CheckInferenceBountySpend(
+			tx.MsgTx(), params, &op, confirmHeight, spendHeight, &confirmHash, refundSig,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // CheckInferenceBountySpend is the full covenant rule applied when spendingTx
 // spends the inference bounty output at bountyOutPoint (params), confirmed at
 // confirmHeight in block confirmBlockHash, and the spend is being connected at

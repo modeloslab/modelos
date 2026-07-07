@@ -604,6 +604,25 @@ mempoolLoop:
 			continue
 		}
 
+		// Skip ANY tx that spends an inference bounty and is no longer valid at
+		// the current tip — a claim whose confirming block was reorged (so
+		// proof.BlockHash no longer matches), OR a post-window refund that a
+		// height-reducing reorg pushed back inside the claim window. Covenant
+		// inputs bypass the script engine above, so without this a single stale
+		// bounty spend would fail the whole-block CheckConnectBlockTemplate below
+		// and abort the ENTIRE template — halting getblocktemplate (and thus all
+		// mining) during reorgs. This is checked unconditionally (not gated on tx
+		// version) because a refund is a plain v1 tx; the check resolves the tip
+		// lazily and returns nil cheaply for txs that don't spend a bounty, so it
+		// is negligible next to the ValidateTransactionScripts sig checks above.
+		// A block that simply omits the offending tx is perfectly valid.
+		if err = g.chain.CheckInferenceBountySpendsAgainstTip(tx, blockUtxos); err != nil {
+			log.Debugf("Skipping bounty-spending tx %s (invalid at tip): %v",
+				tx.Hash(), err)
+			logSkippedDeps(tx, deps)
+			continue
+		}
+
 		// Spend the transaction inputs in the block utxo view and add
 		// an entry for it to ensure any transactions which reference
 		// this one have it available as an input and can ensure they
