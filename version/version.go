@@ -25,7 +25,7 @@ const (
 	// Revision is an optional 4th version component for hotfix / sub-patch
 	// releases (e.g. 1.0.7.5). When 0 the version string stays 3-part
 	// (Major.Minor.Patch).
-	Revision uint = 6
+	Revision uint = 7
 
 	// PreRelease MUST only contain characters from semanticAlphabet
 	// per the semantic versioning spec.

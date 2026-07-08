@@ -412,7 +412,11 @@ class WalletProcess {
 
   async killExistingWalletProcesses() {
     return new Promise<void>(resolve => {
-      const lsofProcess = spawn('lsof', ['-i', ':8335'], { stdio: 'pipe' });
+      // Only free OUR configured RPC port (not a hardcoded 8335, which is the Pearl
+      // desktop wallet's port). Combined with the 'modeloswall'-only filter below,
+      // this guarantees we never kill a Pearl (or other network's) wallet process.
+      const rpcPort = getCurrentNetworkConfig().rpcPort;
+      const lsofProcess = spawn('lsof', ['-i', `:${rpcPort}`], { stdio: 'pipe' });
       let output = '';
 
       lsofProcess.stdout?.on('data', data => {

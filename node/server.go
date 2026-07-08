@@ -67,8 +67,12 @@ var (
 	userAgentName = "modelosd"
 
 	// userAgentVersion is the user agent version and is used to help
-	// identify ourselves to other peers on the network.
-	userAgentVersion = fmt.Sprintf("%d.%d.%d", pearlversion.Major, pearlversion.Minor, pearlversion.Patch)
+	// identify ourselves to other peers on the network. It uses the full
+	// version string (including the 4th "Revision" component, e.g. 1.0.7.7)
+	// so peers — and the minimum-peer-version gate — can distinguish hotfix
+	// releases like 1.0.7.5 from a plain 1.0.7. (Previously this was only
+	// Major.Minor.Patch, which flattened 1.0.7.x to "1.0.7" on the wire.)
+	userAgentVersion = pearlversion.Version()
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
@@ -274,6 +278,90 @@ type server struct {
 	// agentWhitelist is a list of whitelisted user agent substrings, no
 	// whitelisting will be applied if the list is empty or nil.
 	agentWhitelist []string
+
+	// minPeerVersion, when non-nil, is the minimum modelosd version a full-node
+	// peer must advertise (parsed from --minpeerversion). Peers below it are
+	// disconnected. minPeerVersionStr is the original string for logging.
+	minPeerVersion    []int
+	minPeerVersionStr string
+}
+
+// EnforcedMinPeerVersion is the built-in minimum modelosd version a full-node
+// peer must advertise to connect. It is ENFORCED by default (not a flag) so the
+// network converges off buggy old versions automatically; --minpeerversion may
+// raise it. Bump this when an old version must be pushed off the network.
+//
+// Set to 1.0.7 (not 1.0.7.5) for the current rollout: it drops the buggy 1.0.6
+// nodes (the reorg-storm source) while keeping the 1.0.7/1.0.7.x cohort, so our
+// own nodes are not isolated. Older binaries advertise only Major.Minor.Patch
+// (a 1.0.7.x node appears as "1.0.7" on the wire until it upgrades to a build
+// with the full-version user-agent), so a 1.0.7.5 floor would wrongly reject
+// real 1.0.7.5 peers. Raise this to 1.0.7.5 once the network advertises the
+// full version.
+const EnforcedMinPeerVersion = "1.0.7"
+
+// parseModelosdVersion extracts the modelosd application version from a peer
+// user-agent (e.g. "/modeloswire:0.5.0/modelosd:1.0.7.5/" → [1,0,7,5]). Returns
+// nil if the agent carries no "modelosd:" component (SPV/neutrino/crawler/other),
+// so those peers are never gated by the minimum-version check.
+func parseModelosdVersion(userAgent string) []int {
+	const key = "modelosd:"
+	i := strings.Index(userAgent, key)
+	if i < 0 {
+		return nil
+	}
+	rest := userAgent[i+len(key):]
+	if end := strings.IndexAny(rest, "/ )"); end >= 0 {
+		rest = rest[:end]
+	}
+	// Strip any pre-release/build suffix (e.g. "1.0.7-beta+abc") before parsing.
+	if cut := strings.IndexAny(rest, "-+"); cut >= 0 {
+		rest = rest[:cut]
+	}
+	return parseVersionString(rest)
+}
+
+// parseVersionString turns "1.0.7.5" into [1,0,7,5]. Returns nil on any
+// malformed component so a garbage user-agent never triggers a false reject.
+func parseVersionString(s string) []int {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ".")
+	out := make([]int, len(parts))
+	for i, p := range parts {
+		n, err := strconv.Atoi(p)
+		if err != nil {
+			return nil
+		}
+		out[i] = n
+	}
+	return out
+}
+
+// compareVersions compares two dotted version vectors component-wise, treating a
+// missing trailing component as 0 (so "1.0.7" == "1.0.7.0" < "1.0.7.5").
+func compareVersions(a, b []int) int {
+	n := len(a)
+	if len(b) > n {
+		n = len(b)
+	}
+	for i := 0; i < n; i++ {
+		var ai, bi int
+		if i < len(a) {
+			ai = a[i]
+		}
+		if i < len(b) {
+			bi = b[i]
+		}
+		if ai != bi {
+			if ai < bi {
+				return -1
+			}
+			return 1
+		}
+	}
+	return 0
 }
 
 // serverPeer extends the peer to maintain state shared by the server and
@@ -302,6 +390,15 @@ type serverPeer struct {
 	// The following chans are used to sync blockmanager and server.
 	txProcessed    chan struct{}
 	blockProcessed chan error
+
+	// cmpctPending holds compact blocks awaiting a blocktxn response (missing
+	// transactions were requested via getblocktxn). Keyed by block hash and
+	// guarded by cmpctPendingMtx. Bounded by maxPendingCmpctBlocks and evicted
+	// after pendingCmpctTTL. lastCmpctTime rate-limits the expensive mempool
+	// reconstruction sweep per peer. All guarded by cmpctPendingMtx.
+	cmpctPendingMtx sync.Mutex
+	cmpctPending    map[chainhash.Hash]*pendingCmpctBlock
+	lastCmpctTime   time.Time
 }
 
 // newServerPeer returns a new serverPeer instance. The peer needs to be set by
@@ -1816,6 +1913,21 @@ func (s *server) handleAddPeerMsg(state *peerState, sp *serverPeer) bool {
 		return false
 	}
 
+	// Reject full-node peers advertising a modelosd version below the configured
+	// minimum. This keeps a mixed-version network from fragmenting (old nodes with
+	// known consensus/mining bugs can't peer with us), forcing convergence at the
+	// P2P layer instead of relying on operators to upgrade. Only peers whose
+	// user-agent carries "modelosd:<ver>" are gated; SPV/light clients (neutrino),
+	// the crawler, and other agents are never affected.
+	if s.minPeerVersion != nil {
+		if v := parseModelosdVersion(sp.UserAgent()); v != nil && compareVersions(v, s.minPeerVersion) < 0 {
+			srvrLog.Infof("Disconnecting peer %s: modelosd version %s below minimum %s",
+				sp, sp.UserAgent(), s.minPeerVersionStr)
+			sp.Disconnect()
+			return false
+		}
+	}
+
 	// Ignore new peers if we're shutting down.
 	if atomic.LoadInt32(&s.shutdown) != 0 {
 		srvrLog.Infof("New peer %s ignored - server is shutting down", sp)
@@ -1910,6 +2022,12 @@ func (s *server) handleAddPeerMsg(state *peerState, sp *serverPeer) bool {
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is
 // invoked from the peerHandler goroutine.
 func (s *server) handleDonePeerMsg(state *peerState, sp *serverPeer) {
+	// Release any held compact-block reconstructions so a peer that sent
+	// cmpctblocks and then went silent cannot pin memory past its connection.
+	sp.cmpctPendingMtx.Lock()
+	sp.cmpctPending = nil
+	sp.cmpctPendingMtx.Unlock()
+
 	var list map[int32]*serverPeer
 	if sp.persistent {
 		list = state.persistentPeers
@@ -1979,6 +2097,19 @@ func (s *server) handleRelayInvMsg(state *peerState, msg relayMsg) {
 	state.forAllPeers(func(sp *serverPeer) {
 		if !sp.Connected() {
 			return
+		}
+
+		// If the inventory is a block and the peer negotiated high-bandwidth
+		// compact blocks, send a cmpctblock instead of an inv/headers. On any
+		// failure we fall through to the normal inv/headers announcement, so the
+		// peer always learns of the block (additive, never blocking).
+		if msg.invVect.Type == wire.InvTypeBlock && sp.WantsCmpctBlocks() {
+			if cb := s.buildCompactBlock(msg.invVect.Hash); cb != nil {
+				sp.QueueMessage(cb, nil)
+				sp.AddKnownInventory(msg.invVect)
+				return
+			}
+			// else: fall through to inv/headers below.
 		}
 
 		// If the inventory is a block and the peer prefers headers,
@@ -2252,6 +2383,10 @@ func newPeerConfig(sp *serverPeer) *peer.Config {
 			OnRead:         sp.OnRead,
 			OnWrite:        sp.OnWrite,
 			OnNotFound:     sp.OnNotFound,
+			OnSendCmpct:    sp.OnSendCmpct,
+			OnCmpctBlock:   sp.OnCmpctBlock,
+			OnGetBlockTxn:  sp.OnGetBlockTxn,
+			OnBlockTxn:     sp.OnBlockTxn,
 		},
 		NewestBlock:         sp.newestBlock,
 		HostToNetAddress:    sp.server.addrManager.HostToNetAddress,
@@ -2866,6 +3001,27 @@ func newServer(listenAddrs, agentBlacklist, agentWhitelist []string,
 		srvrLog.Infof("User-agent whitelist %s", agentWhitelist)
 	}
 
+	// Minimum peer modelosd version. This is ENFORCED by default (baked into the
+	// binary, not opt-in) so a mixed-version network converges automatically: every
+	// node rejects full-node peers below EnforcedMinPeerVersion. The --minpeerversion
+	// flag is an optional override to RAISE the floor (or, for a special bootstrap
+	// node, "0"/"none" to disable). Full nodes only: SPV/neutrino/crawler pass.
+	minPeerVersionStr := EnforcedMinPeerVersion
+	if cfg.MinPeerVersion != "" {
+		minPeerVersionStr = cfg.MinPeerVersion
+	}
+	var minPeerVersion []int
+	if minPeerVersionStr == "0" || strings.EqualFold(minPeerVersionStr, "none") {
+		srvrLog.Warnf("Peer minimum-version enforcement DISABLED (--minpeerversion=%s)", minPeerVersionStr)
+		minPeerVersionStr = ""
+	} else {
+		minPeerVersion = parseVersionString(minPeerVersionStr)
+		if minPeerVersion == nil {
+			return nil, fmt.Errorf("invalid minimum peer version %q (want e.g. 1.0.7.5)", minPeerVersionStr)
+		}
+		srvrLog.Infof("Enforcing minimum peer modelosd version %s (older full nodes rejected)", minPeerVersionStr)
+	}
+
 	s := server{
 		chainParams:          chainParams,
 		addrManager:          amgr,
@@ -2886,6 +3042,8 @@ func newServer(listenAddrs, agentBlacklist, agentWhitelist []string,
 		cfCheckptCaches:      make(map[wire.FilterType][]cfHeaderKV),
 		agentBlacklist:       agentBlacklist,
 		agentWhitelist:       agentWhitelist,
+		minPeerVersion:       minPeerVersion,
+		minPeerVersionStr:    minPeerVersionStr,
 	}
 
 	// Create the transaction and address indexes if needed.

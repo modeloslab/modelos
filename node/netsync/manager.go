@@ -71,6 +71,12 @@ type blockMsg struct {
 	block *btcutil.Block
 	peer  *peerpkg.Peer
 	reply chan error
+	// forceProcess is set for a block we reconstructed from a compact block
+	// (BIP-152). Such a block is not preceded by a getdata, so the
+	// "unrequested block → disconnect" guard must be bypassed for it. The block
+	// still goes through full validation; only the request-accounting check is
+	// skipped.
+	forceProcess bool
 }
 
 // invMsg packages an inv message and the peer it came from together
@@ -111,6 +117,14 @@ type txMsg struct {
 // retrieving the current sync peer.
 type getSyncPeerMsg struct {
 	reply chan int32
+}
+
+// requestBlockMsg asks the sync manager to request a full block from a specific
+// peer via getdata, updating the request-accounting maps. Used as the fallback
+// when compact-block (BIP-152) reconstruction cannot complete.
+type requestBlockMsg struct {
+	peer *peerpkg.Peer
+	hash *chainhash.Hash
 }
 
 // processBlockResponse is a response sent to the reply channel of a
@@ -500,10 +514,49 @@ func (sm *SyncManager) handleNewPeerMsg(peer *peerpkg.Peer) {
 		nonTipStrikes:   initialStrikes,
 	}
 
+	// Announce that we support high-bandwidth compact blocks (BIP-152). Peers
+	// running this version reply/act on it; older peers ignore the unknown
+	// message (peer.go tolerates unknown messages), so this is fully backward
+	// compatible and never breaks a connection.
+	peer.QueueMessage(wire.NewMsgSendCmpct(true, wire.CompactBlocksVersion), nil)
+
 	// Start syncing by choosing the best candidate if needed.
 	if isSyncCandidate && sm.syncPeer == nil {
 		sm.startSync()
 	}
+}
+
+// handleRequestBlockMsg requests a full block from a peer via getdata as the
+// BIP-152 compact-block fallback. It records the request in the accounting maps
+// (so the arriving block is not treated as unrequested) and skips blocks we
+// already have or already requested. Runs on the manager goroutine.
+func (sm *SyncManager) handleRequestBlockMsg(msg *requestBlockMsg) {
+	if atomic.LoadInt32(&sm.shutdown) != 0 {
+		return
+	}
+	state, exists := sm.peerStates[msg.peer]
+	if !exists {
+		return
+	}
+	// Skip if we already have it or already have it in flight (dedup).
+	if have, err := sm.chain.HaveBlock(msg.hash); err != nil || have {
+		return
+	}
+	if _, requested := sm.requestedBlocks[*msg.hash]; requested {
+		return
+	}
+
+	sm.requestedBlocks[*msg.hash] = struct{}{}
+	state.requestedBlocks[*msg.hash] = struct{}{}
+
+	gdmsg := wire.NewMsgGetData()
+	iv := wire.NewInvVect(wire.InvTypeBlock, msg.hash)
+	if err := gdmsg.AddInvVect(iv); err != nil {
+		delete(sm.requestedBlocks, *msg.hash)
+		delete(state.requestedBlocks, *msg.hash)
+		return
+	}
+	msg.peer.QueueMessage(gdmsg, nil)
 }
 
 // handleStallSample will switch to a new sync peer if the current one has
@@ -735,9 +788,12 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) error {
 		return nil
 	}
 
-	// If we didn't ask for this block then the peer is misbehaving.
+	// If we didn't ask for this block then the peer is misbehaving — UNLESS it
+	// is a compact-block reconstruction (forceProcess), which legitimately
+	// arrives without a preceding getdata. Such blocks still undergo full
+	// validation below; only this request-accounting guard is skipped.
 	blockHash := bmsg.block.Hash()
-	if _, exists = state.requestedBlocks[*blockHash]; !exists {
+	if _, exists = state.requestedBlocks[*blockHash]; !exists && !bmsg.forceProcess {
 		// The regression test intentionally sends some blocks twice
 		// to test duplicate block insertion fails.  Don't disconnect
 		// the peer or ignore the block when we're in regression test
@@ -1475,6 +1531,9 @@ func (sm *SyncManager) processMessage(m interface{}) {
 		}
 		msg.reply <- peerID
 
+	case *requestBlockMsg:
+		sm.handleRequestBlockMsg(msg)
+
 	case processBlockMsg:
 		_, isOrphan, err := sm.chain.ProcessBlock(
 			msg.block, msg.flags)
@@ -1712,6 +1771,30 @@ func (sm *SyncManager) QueueBlock(block *btcutil.Block, peer *peerpkg.Peer, done
 	}
 
 	sm.msgChan <- &blockMsg{block: block, peer: peer, reply: done}
+}
+
+// QueueCompactBlock adds a block that was reconstructed from a BIP-152 compact
+// block to the block-handling queue. Because a compact block is not preceded by
+// a getdata, the block is marked forceProcess so the unrequested-block guard is
+// bypassed; it still undergoes full consensus validation.
+func (sm *SyncManager) QueueCompactBlock(block *btcutil.Block, peer *peerpkg.Peer, done chan error) {
+	if atomic.LoadInt32(&sm.shutdown) != 0 {
+		done <- nil
+		return
+	}
+
+	sm.msgChan <- &blockMsg{block: block, peer: peer, reply: done, forceProcess: true}
+}
+
+// RequestBlock asks the sync manager to fetch the full block with the given hash
+// from the specified peer via getdata (the BIP-152 compact-block fallback). It is
+// request-accounted so the resulting block is not treated as unrequested. Safe to
+// call from any goroutine; a no-op during shutdown.
+func (sm *SyncManager) RequestBlock(peer *peerpkg.Peer, hash *chainhash.Hash) {
+	if atomic.LoadInt32(&sm.shutdown) != 0 {
+		return
+	}
+	sm.msgChan <- &requestBlockMsg{peer: peer, hash: hash}
 }
 
 // QueueInv adds the passed inv message and peer to the block handling queue.

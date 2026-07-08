@@ -59,6 +59,10 @@ const (
 	CmdCFCheckpt    = "cfcheckpt"
 	CmdSendAddrV2   = "sendaddrv2"
 	CmdWTxIdRelay   = "wtxidrelay"
+	CmdSendCmpct    = "sendcmpct"
+	CmdCmpctBlock   = "cmpctblock"
+	CmdGetBlockTxn  = "getblocktxn"
+	CmdBlockTxn     = "blocktxn"
 )
 
 var (
@@ -247,6 +251,18 @@ func makeEmptyMessage(command string) (Message, error) {
 
 	case CmdCFCheckpt:
 		msg = &MsgCFCheckpt{}
+
+	case CmdSendCmpct:
+		msg = &MsgSendCmpct{}
+
+	case CmdCmpctBlock:
+		msg = &MsgCmpctBlock{}
+
+	case CmdGetBlockTxn:
+		msg = &MsgGetBlockTxn{}
+
+	case CmdBlockTxn:
+		msg = &MsgBlockTxn{}
 
 	default:
 		return nil, ErrUnknownMessage

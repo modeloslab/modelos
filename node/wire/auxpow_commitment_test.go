@@ -54,7 +54,7 @@ func TestContainsModelosCommitment(t *testing.T) {
 			want:      -1,
 		},
 		{
-			name: "duplicate magic rejected (bare magic before a valid commitment)",
+			name:      "duplicate magic rejected (bare magic before a valid commitment)",
 			scriptSig: append(append([]byte{}, magic...), commit...),
 			want:      -1,
 		},

@@ -33,6 +33,10 @@ const MaxBlockPayload = 4000000 // Must equal blockchain.MaxBlockVsize × blockc
 // possibly fit into a block.
 const maxTxPerBlock = (MaxBlockPayload / minTxPayload) + 1
 
+// MaxTransactionsPerBlock is the exported ceiling on transactions in a block,
+// used by compact-block reconstruction to bound attacker-controlled tx counts.
+const MaxTransactionsPerBlock = maxTxPerBlock
+
 // TxLoc holds locator data for the offset and length of where a transaction is
 // located within a MsgBlock data buffer.
 type TxLoc struct {

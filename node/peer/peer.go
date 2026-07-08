@@ -198,6 +198,19 @@ type MessageListeners struct {
 	// message.
 	OnSendHeaders func(p *Peer, msg *wire.MsgSendHeaders)
 
+	// OnSendCmpct is invoked when a peer receives a sendcmpct wire message
+	// (BIP-152 compact-block negotiation).
+	OnSendCmpct func(p *Peer, msg *wire.MsgSendCmpct)
+
+	// OnCmpctBlock is invoked when a peer receives a cmpctblock wire message.
+	OnCmpctBlock func(p *Peer, msg *wire.MsgCmpctBlock)
+
+	// OnGetBlockTxn is invoked when a peer receives a getblocktxn wire message.
+	OnGetBlockTxn func(p *Peer, msg *wire.MsgGetBlockTxn)
+
+	// OnBlockTxn is invoked when a peer receives a blocktxn wire message.
+	OnBlockTxn func(p *Peer, msg *wire.MsgBlockTxn)
+
 	// OnSendAddrV2 is invoked when a peer receives a sendaddrv2 message.
 	OnSendAddrV2 func(p *Peer, msg *wire.MsgSendAddrV2)
 
@@ -459,6 +472,8 @@ type Peer struct {
 	sendHeadersPreferred bool   // peer sent a sendheaders message
 	verAckReceived       bool
 	sendAddrV2           bool
+	wantsCmpctBlocks     bool   // peer sent sendcmpct(announce=true): send it cmpctblock
+	cmpctVersion         uint64 // negotiated compact-block version (0 = none)
 
 	V2Transport *v2transport.Peer
 
@@ -812,6 +827,25 @@ func (p *Peer) WantsHeaders() bool {
 	p.flagsMtx.Unlock()
 
 	return sendHeadersPreferred
+}
+
+// WantsCmpctBlocks returns whether the peer requested high-bandwidth compact
+// blocks (sent sendcmpct with announce=true and a supported version). When true
+// we may send it new blocks as an unsolicited cmpctblock.
+func (p *Peer) WantsCmpctBlocks() bool {
+	p.flagsMtx.Lock()
+	wants := p.wantsCmpctBlocks && p.cmpctVersion == wire.CompactBlocksVersion
+	p.flagsMtx.Unlock()
+	return wants
+}
+
+// CmpctVersion returns the negotiated compact-block version, or 0 if the peer
+// did not negotiate compact blocks.
+func (p *Peer) CmpctVersion() uint64 {
+	p.flagsMtx.Lock()
+	v := p.cmpctVersion
+	p.flagsMtx.Unlock()
+	return v
 }
 
 // WantsAddrV2 returns if the peer supports addrv2 messages instead of the
@@ -1596,6 +1630,36 @@ out:
 
 			if p.cfg.Listeners.OnSendHeaders != nil {
 				p.cfg.Listeners.OnSendHeaders(p, msg)
+			}
+
+		case *wire.MsgSendCmpct:
+			// Record the peer's compact-block preference. announce=true means
+			// the peer wants us to send it new blocks as unsolicited cmpctblock
+			// (high-bandwidth mode). Only accept a known version.
+			p.flagsMtx.Lock()
+			if msg.Version == wire.CompactBlocksVersion {
+				p.wantsCmpctBlocks = msg.Announce
+				p.cmpctVersion = msg.Version
+			}
+			p.flagsMtx.Unlock()
+
+			if p.cfg.Listeners.OnSendCmpct != nil {
+				p.cfg.Listeners.OnSendCmpct(p, msg)
+			}
+
+		case *wire.MsgCmpctBlock:
+			if p.cfg.Listeners.OnCmpctBlock != nil {
+				p.cfg.Listeners.OnCmpctBlock(p, msg)
+			}
+
+		case *wire.MsgGetBlockTxn:
+			if p.cfg.Listeners.OnGetBlockTxn != nil {
+				p.cfg.Listeners.OnGetBlockTxn(p, msg)
+			}
+
+		case *wire.MsgBlockTxn:
+			if p.cfg.Listeners.OnBlockTxn != nil {
+				p.cfg.Listeners.OnBlockTxn(p, msg)
 			}
 
 		default:

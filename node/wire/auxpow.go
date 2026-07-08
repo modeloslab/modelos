@@ -64,14 +64,14 @@ func blake3Sum32(data []byte) [32]byte {
 //     into the Pearl block's COINBASE transaction scriptSig, exactly as
 //     Dogecoin embeds its block hash into the Litecoin coinbase:
 //
-//	[AuxPowMagic 4 bytes] [σ_modelos 32 bytes]
+//     [AuxPowMagic 4 bytes] [σ_modelos 32 bytes]
 //
 //  2. The coinbase is the first transaction in the Pearl block.  Its txid is
 //     the leftmost leaf of the Pearl transaction Merkle tree.  The Pearl block
 //     header's MerkleRoot commits to it.  MerkleRoot is in the Pearl block
 //     header's incomplete_header_bytes which drives the CUDA key derivation:
 //
-//	key = BLAKE3(incomplete_header_bytes || mining_config)
+//     key = BLAKE3(incomplete_header_bytes || mining_config)
 //
 //     σ_modelos is thus committed in the ZK proof's key — NO kernel change
 //     needed.  The commitment propagates automatically through the Merkle tree.

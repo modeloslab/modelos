@@ -28,7 +28,10 @@ const NETWORK_CONFIGS: Record<Network, NetworkConfig> = {
     mainnet: {
         name: 'mainnet',
         displayName: 'Mainnet',
-        rpcPort: 8335,
+        // modelOS-specific wallet RPC port (was 8335). 8335 collides with the Pearl
+        // desktop wallet, so opening modelOS while Pearl is running (or vice versa)
+        // failed to bind. 8888 keeps the two apps' bundled wallets independent.
+        rpcPort: 8888,
         walletFlag: '',  // No flag for mainnet (default)
         dataSubdir: 'mainnet',
         addressPrefix: 'mdl1',  // Taproot addresses: mdl1p...
@@ -38,7 +41,8 @@ const NETWORK_CONFIGS: Record<Network, NetworkConfig> = {
     testnet: {
         name: 'testnet',
         displayName: 'Testnet',
-        rpcPort: 8335,
+        // Distinct from mainnet (8888) so mainnet + testnet can run side by side.
+        rpcPort: 8889,
         walletFlag: '--testnet2',
         dataSubdir: 'testnet2',
         addressPrefix: 'tmdl1',  // Testnet Taproot: tmdl1p...
