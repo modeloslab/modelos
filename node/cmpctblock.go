@@ -93,7 +93,11 @@ func (sp *serverPeer) OnGetBlockTxn(_ *peer.Peer, msg *wire.MsgGetBlockTxn) {
 		}
 		txns = append(txns, tx)
 	}
-	sp.QueueMessage(wire.NewMsgBlockTxn(msg.BlockHash, txns), nil)
+	// WITNESS encoding is mandatory: the requested txns include the coinbase, whose witness (the 32-byte
+	// witness reserved value) the requester needs to rebuild a block that passes the witness-commitment
+	// check. QueueMessage defaults to BaseEncoding, which would strip the witness → the reconstructed block
+	// fails with "coinbase has 0 items in its witness stack" and the whole compact-block sync stalls.
+	sp.QueueMessageWithEncoding(wire.NewMsgBlockTxn(msg.BlockHash, txns), nil, wire.WitnessEncoding)
 }
 
 // OnCmpctBlock handles an incoming compact block: reconstruct the full block from

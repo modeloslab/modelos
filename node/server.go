@@ -2105,7 +2105,11 @@ func (s *server) handleRelayInvMsg(state *peerState, msg relayMsg) {
 		// peer always learns of the block (additive, never blocking).
 		if msg.invVect.Type == wire.InvTypeBlock && sp.WantsCmpctBlocks() {
 			if cb := s.buildCompactBlock(msg.invVect.Hash); cb != nil {
-				sp.QueueMessage(cb, nil)
+				// WITNESS encoding is mandatory: the compact block prefills the coinbase (index 0), whose
+				// witness must survive so the receiver can rebuild a block that passes the witness-commitment
+				// check. QueueMessage's default BaseEncoding would strip it → "coinbase has 0 items in its
+				// witness stack" on the peer → block rejected + peer disconnected → network-wide sync stall.
+				sp.QueueMessageWithEncoding(cb, nil, wire.WitnessEncoding)
 				sp.AddKnownInventory(msg.invVect)
 				return
 			}

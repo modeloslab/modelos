@@ -25,7 +25,10 @@ const (
 	// Revision is an optional 4th version component for hotfix / sub-patch
 	// releases (e.g. 1.0.7.5). When 0 the version string stays 3-part
 	// (Major.Minor.Patch).
-	Revision uint = 7
+	// 1.0.7.8: fix the coinbase-witness stripping in BIP-152 compact-block relay
+	// (blocktxn / cmpctblock / full-block fallback now use witness encoding), which
+	// caused the network-wide "coinbase has 0 items in its witness stack" sync stall.
+	Revision uint = 8
 
 	// PreRelease MUST only contain characters from semanticAlphabet
 	// per the semantic versioning spec.

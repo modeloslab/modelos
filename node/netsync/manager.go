@@ -550,7 +550,13 @@ func (sm *SyncManager) handleRequestBlockMsg(msg *requestBlockMsg) {
 	state.requestedBlocks[*msg.hash] = struct{}{}
 
 	gdmsg := wire.NewMsgGetData()
-	iv := wire.NewInvVect(wire.InvTypeBlock, msg.hash)
+	// SegWit is always active — request the FULL WITNESS block (InvTypeWitnessBlock), NOT a base block.
+	// A base-encoded block is served WITHOUT the coinbase witness, so its witness-commitment check fails
+	// with "the coinbase transaction has 0 items in its witness stack" → the block is rejected and the
+	// serving peer disconnected. That is the network-wide sync stall (nodes fall behind + churn peers) once
+	// BIP-152 compact-block relay is active and this full-block fallback fires for tip blocks. Mirrors the
+	// headers-first fetch, which already upgrades to InvTypeWitnessBlock.
+	iv := wire.NewInvVect(wire.InvTypeWitnessBlock, msg.hash)
 	if err := gdmsg.AddInvVect(iv); err != nil {
 		delete(sm.requestedBlocks, *msg.hash)
 		delete(state.requestedBlocks, *msg.hash)
