@@ -302,7 +302,7 @@ var MainNetParams = Params{
 	MinDiffReductionTime: 0,
 	GenerateSupported:    false,
 	// inference_tx (v3) and inference_proof_tx (v4) are modelOS mainnet-only.
-	MaxSupportedTxVersion: 4,
+	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  5,
 
 	// Checkpoints ordered from oldest to newest. Each hash was taken from the
@@ -403,7 +403,7 @@ var RegressionNetParams = Params{
 	ReduceMinDifficulty:   true,
 	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
 	GenerateSupported:     true,
-	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  120, // 2 hours for regtest
 
 	// Checkpoints ordered from oldest to newest.
@@ -491,7 +491,7 @@ var TestNetParams = Params{
 	ReduceMinDifficulty:  true,
 	MinDiffReductionTime: time.Hour * 4, // 4 hours
 	GenerateSupported:    false,
-	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  5,
 
 	// Checkpoints ordered from oldest to newest.
@@ -579,7 +579,7 @@ var TestNet2Params = Params{
 	ReduceMinDifficulty:  true,
 	MinDiffReductionTime: time.Hour * 4, // 4 hours
 	GenerateSupported:    false,
-	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  5,
 
 	// Checkpoints ordered from oldest to newest.
@@ -670,7 +670,7 @@ var SimNetParams = Params{
 	ReduceMinDifficulty:   true,
 	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
 	GenerateSupported:     true,
-	MaxSupportedTxVersion: 4, // inference_tx enabled on all non-Pearl networks
+	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  120, // 2 hours for simnet
 
 	// Checkpoints ordered from oldest to newest.

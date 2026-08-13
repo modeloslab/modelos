@@ -12,7 +12,19 @@ import (
 
 const (
 	// ProtocolVersion is the latest protocol version this package supports.
-	ProtocolVersion uint32 = 1
+	//
+	// Version 2 marks software that understands the salted noise-seed (V3
+	// certificate) derivation, so it can follow the chain once merge-mined
+	// AuxPoW blocks start carrying post-SaltedSeedForkHeight Pearl proofs.
+	//
+	// Bumping this does NOT by itself disconnect older peers: the floor that
+	// decides who we talk to is peer.MinAcceptableProtocolVersion, which is a
+	// separate constant and stays at 1 for this release. That is deliberate — a
+	// release that bumps both at once makes the first upgraded node refuse every
+	// peer still on the old version, isolating it and splitting the network. Raise
+	// the floor in a LATER release, once the upgrade has activated and old nodes
+	// genuinely cannot follow the chain anyway.
+	ProtocolVersion uint32 = 2
 )
 
 const (

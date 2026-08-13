@@ -290,8 +290,12 @@ func CheckTransactionSanity(tx *btcutil.Tx, allowInferenceTx bool) error {
 		}
 	}
 
-	// Enforce inference_tx / inference_proof_tx rules — modelOS mainnet only.
-	if msgTx.Version == wire.TxVersionInference || msgTx.Version == wire.TxVersionInferenceProof {
+	// Enforce inference_tx / inference_proof_tx / inferencego_tx rules — modelOS
+	// mainnet only. inferencego_tx (version 5) rides the same network gate as the
+	// inference family so an issuance is rejected outright on networks that do not
+	// support it, rather than reaching the issuance rules at all.
+	if msgTx.Version == wire.TxVersionInference || msgTx.Version == wire.TxVersionInferenceProof ||
+		msgTx.Version == wire.TxVersionInferenceGo {
 		if !allowInferenceTx {
 			str := fmt.Sprintf("transaction version %d (inference) is not "+
 				"supported on this network", msgTx.Version)
@@ -299,6 +303,20 @@ func CheckTransactionSanity(tx *btcutil.Tx, allowInferenceTx bool) error {
 		}
 	}
 	if allowInferenceTx {
+		// Enforce inferencego_tx structural rules (transaction version 5). The
+		// authorised-signature and destination checks live in checkInferenceGoTx,
+		// which needs the block height; only shape is checked here.
+		if msgTx.Version == wire.TxVersionInferenceGo {
+			if wire.CountInferenceGoPayloadOutputs(msgTx) != 1 {
+				return ruleError(ErrBadTxOutValue,
+					"inferencego_tx must carry exactly one issuance payload output")
+			}
+			if len(msgTx.TxIn) == 0 {
+				return ruleError(ErrNoTxInputs,
+					"inferencego_tx must spend at least one input")
+			}
+		}
+
 		// Enforce inference_tx rules (transaction version 3).
 		// Open inference market: any GPU worker may respond — not just the block winner.
 		if msgTx.Version == wire.TxVersionInference {
@@ -988,6 +1006,23 @@ func (b *BlockChain) checkBIP0030(node *blockNode, block *btcutil.Block, view *U
 // NOTE: The transaction MUST have already been sanity checked with the
 // CheckTransactionSanity function prior to calling this function.
 func CheckTransactionInputs(tx *btcutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64, error) {
+	return CheckTransactionInputsWithIssuance(tx, txHeight, utxoView, chainParams, 0)
+}
+
+// CheckTransactionInputsWithIssuance is CheckTransactionInputs with an allowance
+// for value CREATED FROM NOTHING by an inferencego_tx.
+//
+// `issued` must be 0 for every ordinary transaction; it is non-zero only when
+// checkInferenceGoTx has already validated the issuance (fork active, exactly
+// one payload, authorised signature, destination paid exactly). It is added to
+// the input total, so an issuance's outputs may exceed its inputs by precisely
+// that amount and no more — the "outputs must not exceed inputs" rule still
+// applies, just against inputs+issued.
+//
+// This is the ONLY place on the chain besides the coinbase where value may be
+// created. Passing a non-zero `issued` that has not been validated by
+// checkInferenceGoTx would let a transaction mint freely.
+func CheckTransactionInputsWithIssuance(tx *btcutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params, issued int64) (int64, error) {
 	// Coinbase transactions have no inputs.
 	if IsCoinBase(tx) {
 		return 0, nil
@@ -1063,6 +1098,21 @@ func CheckTransactionInputs(tx *btcutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	var totalGrainOut int64
 	for _, txOut := range tx.MsgTx().TxOut {
 		totalGrainOut += txOut.Value
+	}
+
+	// An authorised issuance may create `issued` grains from nothing: fold it
+	// into the input side so the conservation rule below still holds, just
+	// against inputs+issued.
+	if issued < 0 {
+		return 0, ruleError(ErrBadTxOutValue, "negative issuance allowance")
+	}
+	if issued > 0 {
+		lastIn := totalGrainIn
+		totalGrainIn += issued
+		if totalGrainIn < lastIn || totalGrainIn > btcutil.MaxGrain {
+			return 0, ruleError(ErrBadTxOutValue,
+				"total value of inputs plus issuance overflows the maximum allowed value")
+		}
 	}
 
 	// Ensure the transaction does not spend more than its inputs.
@@ -1148,8 +1198,15 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *btcutil.Block, vi
 	transactions := block.Transactions()
 	var totalFees int64
 	for _, tx := range transactions {
-		txFee, err := CheckTransactionInputs(tx, node.height, view,
-			b.chainParams)
+		// Validate any inferencego issuance BEFORE the value check, and pass the
+		// permitted amount in so the conservation rule accounts for it.
+		issued, err := b.checkInferenceGoTx(tx, node)
+		if err != nil {
+			return err
+		}
+
+		txFee, err := CheckTransactionInputsWithIssuance(tx, node.height, view,
+			b.chainParams, issued)
 		if err != nil {
 			return err
 		}

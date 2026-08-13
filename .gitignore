@@ -1,6 +1,5 @@
-
-# Generated MDL wallet keypairs — secrets, never commit
 modeloswallets.json
+modeloswalletscopy.json
 
 # modelOS — kept OUT of this (node/chain) repo
 /deploy/
@@ -9,6 +8,16 @@ modeloswallets.json
 apps/compute/
 /scripts/
 .claude/
+
+# dCloud — unreleased/proprietary, NEVER commit to the public node repo
+dcloud-*/
+/dcloud-coordinator/
+/dcloud-plugin/
+/dcloud-bridge/
+apps/dcloud/
+miner/modelos-dcloud/
+dcloud_*.py
+**/dcloud-unified/
 /docker-compose.production.yml
 /docker-compose.yml
 /Makefile
@@ -266,3 +275,19 @@ explorer_data/
 
 # External prover package
 /miner/modelos-prover/
+
+# Internal design drafts (keep local, do not commit)
+SUBNETS_MINER_SECURED.md
+
+# modelos-dcloud internal spec (keep local)
+miner/modelos-dcloud/SPEC.md
+
+# NovaScript — Programmable AI / On-Chain Agentic Layer (Phase 4) design docs, WIP, kept local
+novascript/
+
+node/inferencego_build.go.local
+node/inferencego_build
+*.go.local
+*.local.mjs
+node/blockchain/inferencego_connect_test.go
+node/blockchain/inferencego_reorg_test.go

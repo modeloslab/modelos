@@ -8,7 +8,7 @@ use primitive_types::U256;
 
 use crate::api::proof::{
     Hash256, IncompleteBlockHeader, MINING_CONFIG_RESERVED_SIZE, MMAType, MiningConfiguration, MoEConfig, MoEParams,
-    PeriodicPattern, PrivateProofParams, PublicProofParams, ZKProof,
+    PeriodicPattern, PrivateProofParams, PublicProofParams, SeedDerivation, ZKProof,
 };
 use crate::api::sanity_checks::public_params_sanity_check;
 use crate::circuit::chip::blake3::program::{AuxiliaryCvLocation, AuxiliaryMsgLocation, BlakeProgram};
@@ -346,11 +346,15 @@ impl PublicProofParams {
     /// In the MoE setting `hash_a` is replaced by `hash_activations = blake3(hash_a || hash_router)`,
     /// so the routing affects A's noise seed without an extra chained hash.
     pub fn commitment_hash(&self, job_key: Hash256) -> (Hash256, Hash256) {
+        // V3 (Salted) binds each Merkle root to its own domain salt AND its dimension before the
+        // seed chain; Legacy passes the roots through unchanged. MoE salts BEFORE the routing fold,
+        // so the bound root (not the raw one) enters hash_activations.
+        let (hash_a, hash_b) = self.seed_derivation.bind_roots(&self.hash_a, &self.hash_b, self.m, self.n);
         let hash_activations = match &self.moe {
-            Some(moe) => compute_hash_activations(&self.hash_a, &moe.hash_routing, &moe.routing_offsets, &job_key),
-            None => self.hash_a,
+            Some(moe) => compute_hash_activations(&hash_a, &moe.hash_routing, &moe.routing_offsets, &job_key),
+            None => hash_a,
         };
-        let b_noise_seed = blake3_digest(&[&job_key[..], &self.hash_b[..]].concat(), None);
+        let b_noise_seed = blake3_digest(&[&job_key[..], &hash_b[..]].concat(), None);
         let a_noise_seed = blake3_digest(&[&b_noise_seed[..], &hash_activations[..]].concat(), None);
 
         (b_noise_seed, a_noise_seed)
@@ -693,6 +697,7 @@ impl PublicProofParams {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         block_header: IncompleteBlockHeader,
+        seed_derivation: SeedDerivation,
         mining_config: MiningConfiguration,
         hash_a: Hash256,
         hash_b: Hash256,
@@ -704,6 +709,7 @@ impl PublicProofParams {
     ) -> Self {
         Self {
             block_header,
+            seed_derivation,
             mining_config,
             hash_a,
             hash_b,
@@ -720,6 +726,7 @@ impl PublicProofParams {
     #[allow(clippy::too_many_arguments)]
     pub fn new_dummy(
         block_header: IncompleteBlockHeader,
+        seed_derivation: SeedDerivation,
         mining_configuration: MiningConfiguration,
         m: u32,
         n: u32,
@@ -728,6 +735,7 @@ impl PublicProofParams {
     ) -> Self {
         Self::new(
             block_header,
+            seed_derivation,
             mining_configuration,
             [1; 32], // dummy hash_a
             [2; 32], // dummy hash_b
@@ -743,6 +751,7 @@ impl PublicProofParams {
     pub fn new_for_tests(m: u32, n: u32, k: u32) -> Self {
         Self::new_dummy(
             IncompleteBlockHeader::new_for_test(0x207FFFFF),
+            SeedDerivation::Legacy,
             MiningConfiguration {
                 common_dim: k,
                 rank: 128,
@@ -776,6 +785,7 @@ mod tests {
                 timestamp: 0,
                 nbits: 0,
             },
+            SeedDerivation::Legacy,
             MiningConfiguration {
                 common_dim: 4096 - 64,
                 rank: 128,
@@ -1042,7 +1052,7 @@ mod tests {
         assert_eq!(bytes.len(), PublicProofParams::WIRE_SIZE);
 
         let proof_blob = [0u8; ZKProof::PROOFDATA_PREAMBLE];
-        let (parsed, _) = ZKProof::deserialize(params.block_header, &bytes, &proof_blob).unwrap();
+        let (parsed, _) = ZKProof::deserialize(params.block_header, SeedDerivation::Legacy, &bytes, &proof_blob).unwrap();
         assert!(parsed.moe.is_none());
         assert_eq!(parsed.hash_a, params.hash_a);
         assert_eq!(parsed.hash_b, params.hash_b);
@@ -1071,7 +1081,7 @@ mod tests {
         assert!(bytes.len() > PublicProofParams::WIRE_SIZE);
 
         let proof_blob = [0u8; ZKProof::PROOFDATA_PREAMBLE];
-        let (parsed, _) = ZKProof::deserialize(params.block_header, &bytes, &proof_blob).unwrap();
+        let (parsed, _) = ZKProof::deserialize(params.block_header, SeedDerivation::Legacy, &bytes, &proof_blob).unwrap();
         let moe_config = parsed.mining_config.moe.as_ref().unwrap();
         assert_eq!(moe_config.e, 4);
         assert_eq!(moe_config.top_k, 4);
@@ -1116,7 +1126,13 @@ impl PublicProofParams {
     /// `hash_routing(32)` | `outer_count(u8)` | `outer_indices(u32 LE each)`.
     /// `e` and `top_k` come from `mining_config.moe` (committed in the job_key).
     /// Each routing offset is a `u32` bounded by `m * top_k < 2^32`, serialized as 4 LE bytes.
-    pub fn from_wire_bytes(block_header: IncompleteBlockHeader, public_data: &[u8]) -> Result<Self> {
+    /// `seed_derivation` is NOT carried on the wire (the wire always holds raw roots) — it comes
+    /// from the block's certificate version, so the caller must supply it.
+    pub fn from_wire_bytes(
+        block_header: IncompleteBlockHeader,
+        seed_derivation: SeedDerivation,
+        public_data: &[u8],
+    ) -> Result<Self> {
         ensure!(
             public_data.len() >= Self::WIRE_SIZE,
             "public_data too short: need at least {} bytes",
@@ -1211,6 +1227,7 @@ impl PublicProofParams {
 
         Ok(Self {
             block_header,
+            seed_derivation,
             mining_config,
             hash_a,
             hash_b,
@@ -1368,10 +1385,11 @@ impl ZKProof {
     /// `proof_data` layout: `pow_bits(3) | rate_bits(3) | zeta(16) | plonky2_proof`
     pub fn deserialize(
         block_header: IncompleteBlockHeader,
+        seed_derivation: SeedDerivation,
         public_data: &[u8],
         proof_data: &[u8],
     ) -> Result<(PublicProofParams, Self)> {
-        let params = PublicProofParams::from_wire_bytes(block_header, public_data)?;
+        let params = PublicProofParams::from_wire_bytes(block_header, seed_derivation, public_data)?;
         let zk_proof = Self::from_bytes(proof_data)?;
         Ok((params, zk_proof))
     }

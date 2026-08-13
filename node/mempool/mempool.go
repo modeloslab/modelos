@@ -1519,8 +1519,22 @@ func (mp *TxPool) checkMempoolAcceptance(tx *btcutil.Tx,
 	//
 	// NOTE: this check must be performed before `validateStandardness` to
 	// make sure a nil entry is not returned from `utxoView.LookupEntry`.
-	txFee, err := blockchain.CheckTransactionInputs(
-		tx, nextBlockHeight, utxoView, mp.cfg.ChainParams,
+	//
+	// A version-5 transaction carries an authorised allowance that must be folded
+	// in here exactly as it is on the block-connect path, or the mempool rejects
+	// what a block would accept.
+	issued, err := blockchain.CheckInferenceGoIssuance(
+		tx, nextBlockHeight, mp.cfg.ChainParams,
+	)
+	if err != nil {
+		if cerr, ok := err.(blockchain.RuleError); ok {
+			return nil, chainRuleError(cerr)
+		}
+		return nil, err
+	}
+
+	txFee, err := blockchain.CheckTransactionInputsWithIssuance(
+		tx, nextBlockHeight, utxoView, mp.cfg.ChainParams, issued,
 	)
 	if err != nil {
 		if cerr, ok := err.(blockchain.RuleError); ok {

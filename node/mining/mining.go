@@ -586,8 +586,21 @@ mempoolLoop:
 
 		// Ensure the transaction inputs pass all of the necessary
 		// preconditions before allowing it to be added to the block.
-		_, err = blockchain.CheckTransactionInputs(tx, nextBlockHeight,
-			blockUtxos, g.chainParams)
+		//
+		// A version-5 transaction carries an authorised allowance that must be
+		// folded in here exactly as it is in the mempool and on the block-connect
+		// path. All three admission points must agree, or the template silently
+		// skips a transaction the other two accept.
+		issued, err := blockchain.CheckInferenceGoIssuance(tx, nextBlockHeight,
+			g.chainParams)
+		if err != nil {
+			log.Tracef("Skipping tx %s due to error in "+
+				"CheckInferenceGoIssuance: %v", tx.Hash(), err)
+			logSkippedDeps(tx, deps)
+			continue
+		}
+		_, err = blockchain.CheckTransactionInputsWithIssuance(tx, nextBlockHeight,
+			blockUtxos, g.chainParams, issued)
 		if err != nil {
 			log.Tracef("Skipping tx %s due to error in "+
 				"CheckTransactionInputs: %v", tx.Hash(), err)

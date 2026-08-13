@@ -66,9 +66,13 @@ func verifyZKCertificateInner(header *wire.BlockHeader, c *wire.ZKCertificate, n
 	// SHA256d(version_LE || PublicData). The certificate version is V1 here for
 	// both native modelOS blocks and the embedded Pearl parent on the AuxPoW path.
 	//
-	// AuxPoW NOTE: a post-MoE (V2) Pearl chain commits with a version-2 prefix.
-	// modelOS deliberately accepts ONLY the V1 commitment — aux pools MUST normalise
-	// the embedded Pearl header's commitment to the V1 form before submitauxblock
+	// AuxPoW NOTE: a post-MoE (V2) Pearl chain commits with a version-2 prefix, and a
+	// post-SaltedSeedFork (V3) chain with a version-3 prefix. modelOS deliberately
+	// accepts ONLY the V1 commitment — aux pools MUST normalise the embedded Pearl
+	// header's commitment to the V1 form before submitauxblock. This is UNCHANGED by
+	// the salted-seed fork: a pool that was already merged mining just normalises from
+	// 3 instead of 2, same one-field rewrite. (The proof underneath is now salted; that
+	// is handled by the derivation fallback below, not here.)
 	// (the committed PublicData is byte-identical to V1, so this rewrites only the
 	// 32-byte commitment field and is sound — the real Pearl block sent to pearld
 	// keeps its native V2 commitment). Accepting both versions was rejected because
@@ -106,7 +110,15 @@ func verifyZKCertificateInner(header *wire.BlockHeader, c *wire.ZKCertificate, n
 	var errorBuf [C.ERROR_MSG_MAX_SIZE]C.char
 	var result C.int32_t
 	if nbitsOverride != nil {
-		result = C.verify_zk_proof_v2_with_nbits(&cBlockHeader, &cZKProof, C.uint32_t(*nbitsOverride), &errorBuf[0])
+		// AuxPoW path (the only caller that overrides nbits — it verifies the embedded Pearl
+		// parent against the easier modelOS target). Pearl hard-forked its noise-seed derivation
+		// at SaltedSeedForkHeight (certificate V3), and the derivation is NOT on the wire, so we
+		// accept EITHER: salted first (all post-fork parents), legacy as fallback (pre-fork
+		// parents and historical replay). A proof is bound to exactly one derivation, so this
+		// cannot let an invalid proof through — it only costs a second cached verify when the
+		// first derivation is the wrong one. The certificate COMMITMENT stays pinned to the V1
+		// form above, so the two-commitments-per-proof malleability guard is unaffected.
+		result = C.verify_zk_proof_auxpow_with_nbits(&cBlockHeader, &cZKProof, C.uint32_t(*nbitsOverride), &errorBuf[0])
 	} else {
 		result = C.verify_zk_proof_v2(&cBlockHeader, &cZKProof, &errorBuf[0])
 	}

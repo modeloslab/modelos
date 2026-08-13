@@ -38,7 +38,25 @@ const (
 
 	// MinAcceptableProtocolVersion is the lowest protocol version that a
 	// connected peer may support.
-	MinAcceptableProtocolVersion = wire.ProtocolVersion
+	//
+	// DELIBERATELY A STANDALONE CONSTANT, NOT wire.ProtocolVersion. Deriving it
+	// from the current version couples "what we speak" to "what we demand", so
+	// bumping wire.ProtocolVersion would raise the floor in the same release —
+	// and the first node to upgrade would refuse every peer still on the old
+	// version, isolating itself. As more nodes upgraded the network would split
+	// into two non-communicating halves, both mining, and healing the split would
+	// mean a deep reorg.
+	//
+	// The correct sequence for a protocol upgrade is therefore TWO releases:
+	//
+	//	1. bump wire.ProtocolVersion, LEAVE this floor alone. Upgraded nodes
+	//	   advertise the new version but still talk to everyone, so the network
+	//	   stays whole while adoption happens.
+	//	2. once the upgrade has activated and old nodes genuinely cannot follow
+	//	   the chain any more, raise this floor to cut them off.
+	//
+	// Raising it any earlier disconnects peers that still share our chain.
+	MinAcceptableProtocolVersion uint32 = 1
 
 	// outputBufferSize is the number of elements the output channels use.
 	outputBufferSize = 50

@@ -15,7 +15,7 @@ use blake3::CHUNK_LEN;
 use pearl_blake3::{pad_to_chunk_boundary, MerkleProof, MerkleTree};
 use zk_pow::api::proof::{
     IncompleteBlockHeader, MMAType, MiningConfiguration, MoEConfig, PeriodicPattern,
-    PublicProofParams, ZKProof,
+    PublicProofParams, ZKProof, SeedDerivation,
 };
 use zk_pow::api::{prove, verify};
 use zk_pow::circuit::pearl_circuit::{PearlRecursion, RecursionCircuit};
@@ -78,11 +78,11 @@ fn acquire_cache() -> PyResult<std::sync::MutexGuard<'static, CircuitCache>> {
         .map_err(|_| py_err("Cache poisoned by prior panic", "restart required"))
 }
 
-#[pyfunction]
-fn generate_proof_v2(
+fn generate_proof_v2_impl(
     py: Python<'_>,
     block_header: IncompleteBlockHeader,
     plain_proof: PlainProof,
+    seed: SeedDerivation,
 ) -> PyResult<PyProof> {
     // RELEASE THE GIL for the duration of the ~18s plonky2 prove. Without this, even though the
     // miner runs this on a worker thread, holding the GIL freezes the WHOLE asyncio event loop for
@@ -93,7 +93,7 @@ fn generate_proof_v2(
     // on the cache (PROVE_WORKERS>1) but no longer serialize the entire event loop.
     let (public_data, proof_data) = py.allow_threads(|| -> PyResult<(Vec<u8>, Vec<u8>)> {
         let mut cache = acquire_cache()?;
-        let result = prove::zk_prove_plain_proof(block_header, &plain_proof, &mut cache, true)
+        let result = prove::zk_prove_plain_proof(block_header, &plain_proof, &mut cache, true, seed)
             .map_err(|e| py_err("Prove failed", e))?;
         Ok((result.public_data, result.proof_data))
     })?;
@@ -104,11 +104,48 @@ fn generate_proof_v2(
     })
 }
 
+/// Report which SIMD field backend this wheel was COMPILED with — the decisive prove-speed factor.
+/// "avx512" ≈ 2x faster than "avx2" for the Goldilocks FFT/Poseidon that dominates the prove. If this
+/// returns "avx2" (or "scalar") the wheel was NOT built for AVX-512 → rebuild with
+/// RUSTFLAGS="-C target-cpu=znver4" (needs avx512 f+bw+cd+dq+vl, which Zen4 has). The prover logs this
+/// at startup so you can SEE the backend instead of guessing why proofs are slow.
 #[pyfunction]
-fn verify_proof_v2(
+fn simd_backend() -> &'static str {
+    #[cfg(all(target_arch = "x86_64", target_feature = "avx512f", target_feature = "avx512bw",
+              target_feature = "avx512cd", target_feature = "avx512dq", target_feature = "avx512vl"))]
+    { return "avx512"; }
+    #[cfg(all(target_arch = "x86_64", target_feature = "avx2",
+              not(all(target_feature = "avx512f", target_feature = "avx512bw",
+                      target_feature = "avx512cd", target_feature = "avx512dq", target_feature = "avx512vl"))))]
+    { return "avx2"; }
+    #[allow(unreachable_code)]
+    { "scalar" }
+}
+
+/// FAST prove for the EXTERNAL POOL PROVER: identical proof to generate_proof_v2 but SKIPS the
+/// Merkle membership re-verify (the pool already verified the witness before dispatch + the node
+/// re-verifies the final proof on submit) and the sanity check. Saves the per-proof parse cost on
+/// the prove hot path. NEVER use on untrusted input that isn't independently verified downstream.
+fn generate_proof_v2_trusted_impl(
+    py: Python<'_>,
+    block_header: IncompleteBlockHeader,
+    plain_proof: PlainProof,
+    seed: SeedDerivation,
+) -> PyResult<PyProof> {
+    let (public_data, proof_data) = py.allow_threads(|| -> PyResult<(Vec<u8>, Vec<u8>)> {
+        let mut cache = acquire_cache()?;
+        let result = prove::zk_prove_plain_proof_opt(block_header, &plain_proof, &mut cache, false, false, seed)
+            .map_err(|e| py_err("Prove failed", e))?;
+        Ok((result.public_data, result.proof_data))
+    })?;
+    Ok(PyProof { public_data, proof_data })
+}
+
+fn verify_proof_v2_impl(
     py: Python<'_>,
     block_header: IncompleteBlockHeader,
     proof: &PyProof,
+    seed: SeedDerivation,
 ) -> PyResult<(bool, String)> {
     if !PublicProofParams::is_valid_wire_size(proof.public_data.len()) {
         return Err(pyo3::exceptions::PyValueError::new_err(format!(
@@ -120,7 +157,7 @@ fn verify_proof_v2(
     }
 
     let (params, zk_proof) =
-        ZKProof::deserialize(block_header, &proof.public_data, &proof.proof_data)
+        ZKProof::deserialize(block_header, seed, &proof.public_data, &proof.proof_data)
             .map_err(|e| py_err("Deserialize failed", e))?;
 
     // RELEASE THE GIL for the heavy block-proof verify (builds the recursive circuit). The POOL
@@ -141,12 +178,12 @@ fn verify_proof_v2(
 /// header's own nbits. Used by the merged-mining pool: miners mine the Pearl header (Pearl
 /// bits) but prove on the easier MDL (child) target, so the pool verifies the proof at the
 /// MDL target — exactly what the node's VerifyAuxPow does. Returns (accepted, message).
-#[pyfunction]
-fn verify_proof_v2_with_nbits(
+fn verify_proof_v2_with_nbits_impl(
     py: Python<'_>,
     block_header: IncompleteBlockHeader,
     proof: &PyProof,
     nbits_override: u32,
+    seed: SeedDerivation,
 ) -> PyResult<(bool, String)> {
     if !PublicProofParams::is_valid_wire_size(proof.public_data.len()) {
         return Err(pyo3::exceptions::PyValueError::new_err(format!(
@@ -158,7 +195,7 @@ fn verify_proof_v2_with_nbits(
     }
 
     let (params, zk_proof) =
-        ZKProof::deserialize(block_header, &proof.public_data, &proof.proof_data)
+        ZKProof::deserialize(block_header, seed, &proof.public_data, &proof.proof_data)
             .map_err(|e| py_err("Deserialize failed", e))?;
 
     // Build-on-miss (like verify_proof_v2), NOT cached-only: the pool's submit_block_proof
@@ -195,20 +232,19 @@ fn warmup_prove_v2(mining_config: MiningConfiguration) -> PyResult<()> {
     prove::warmup_prove(mining_config, &mut cache).map_err(|e| py_err("Warmup prove failed", e))
 }
 
-#[pyfunction]
-#[pyo3(signature = (block_header, plain_proof, nbits_override=None))]
-fn verify_plain_proof_v2(
+fn verify_plain_proof_v2_impl(
     py: Python<'_>,
     block_header: IncompleteBlockHeader,
     plain_proof: PlainProof,
     nbits_override: Option<u32>,
+    seed: SeedDerivation,
 ) -> PyResult<(bool, String)> {
     // RELEASE THE GIL: this is the miner's per-share self-check, run for EVERY witness in the
     // witness pool (up to 3×/share). Holding the GIL serialized all witness-build threads on the
     // verify portion, so MODELOS_WITNESS_WORKERS could not actually parallelize. allow_threads lets
     // the N build threads recompute concurrently (the work is pure CPU over owned inputs).
     py.allow_threads(
-        || match verify::verify_plain_proof(&block_header, &plain_proof, nbits_override) {
+        || match verify::verify_plain_proof(&block_header, &plain_proof, nbits_override, seed) {
             Ok(()) => Ok((true, "Mining solution verified successfully".into())),
             Err(e) => Ok((false, e.to_string())),
         },
@@ -219,16 +255,34 @@ fn verify_plain_proof_v2(
 /// Returns the jackpot bytes; raises ValueError on an invalid witness (bad merkle
 /// openings, out-of-range strips, sanity failure). Used by the pool's cheap
 /// witness-grading path to grade one witness against share/block/pearl targets.
-#[pyfunction]
-fn verify_plain_proof_jackpot_v2(
+fn verify_plain_proof_jackpot_v2_impl(
     py: Python<'_>,
     block_header: IncompleteBlockHeader,
     plain_proof: PlainProof,
+    seed: SeedDerivation,
 ) -> PyResult<Vec<u8>> {
     // RELEASE THE GIL: per-share jackpot recompute, also run in the witness pool for grading. Same
     // rationale as verify_plain_proof_v2 — lets the build threads run genuinely in parallel.
     py.allow_threads(|| {
-        verify::verify_plain_proof_jackpot(&block_header, &plain_proof)
+        verify::verify_plain_proof_jackpot(&block_header, &plain_proof, seed)
+            .map(|h| h.to_vec())
+            .map_err(value_err)
+    })
+}
+
+/// FAST jackpot recompute (pool block-SCREENING): byte-identical to verify_plain_proof_jackpot_v2 for
+/// an HONEST witness, but SKIPS the BLAKE3 Merkle membership recompute (the ~190ms cost) — so the pool
+/// can screen ~all submitted shares for block-clearers cheaply. The full jackpot/_v2 (membership) is
+/// still run before proving/submitting a block + on an anti-cheat sample, so a forged witness can't get
+/// a block through or game PPLNS. NOT a sole consensus check.
+fn verify_plain_proof_jackpot_fast_impl(
+    py: Python<'_>,
+    block_header: IncompleteBlockHeader,
+    plain_proof: PlainProof,
+    seed: SeedDerivation,
+) -> PyResult<Vec<u8>> {
+    py.allow_threads(|| {
+        verify::verify_plain_proof_jackpot_fast(&block_header, &plain_proof, seed)
             .map(|h| h.to_vec())
             .map_err(value_err)
     })
@@ -262,7 +316,7 @@ fn plain_jackpot_from_strips(
 }
 
 #[pyfunction]
-#[pyo3(signature = (m, n, k, block_header, mining_config, signal_range=None, wrong_jackpot_hash=false))]
+#[pyo3(signature = (m, n, k, block_header, mining_config, signal_range=None, wrong_jackpot_hash=false, cert_version=None))]
 fn mine(
     m: usize,
     n: usize,
@@ -271,7 +325,11 @@ fn mine(
     mining_config: MiningConfiguration,
     signal_range: Option<(i8, i8)>,
     wrong_jackpot_hash: bool,
+    cert_version: Option<u32>,
 ) -> PyResult<PlainProof> {
+    let seed = CertificateVersion::try_from(cert_version.unwrap_or(2))
+        .map_err(value_err)?
+        .seed_derivation();
     ffi_mine(
         m,
         n,
@@ -280,12 +338,13 @@ fn mine(
         mining_config,
         signal_range,
         wrong_jackpot_hash,
+        seed,
     )
     .map_err(|e| py_err("Mining failed", e))
 }
 
 #[pyfunction]
-#[pyo3(signature = (m, n, k, block_header, mining_config, signal_range=None, wrong_jackpot_hash=false))]
+#[pyo3(signature = (m, n, k, block_header, mining_config, signal_range=None, wrong_jackpot_hash=false, cert_version=None))]
 fn mine_moe(
     m: usize,
     n: usize,
@@ -294,7 +353,11 @@ fn mine_moe(
     mining_config: MiningConfiguration,
     signal_range: Option<(i8, i8)>,
     wrong_jackpot_hash: bool,
+    cert_version: Option<u32>,
 ) -> PyResult<PlainProof> {
+    let seed = CertificateVersion::try_from(cert_version.unwrap_or(2))
+        .map_err(value_err)?
+        .seed_derivation();
     // Both `e` and `top_k` are committed in `mining_config` (via its `moe` field), so
     // the caller selects GROUPED_GEMM by passing a config with `moe` set.
     ffi_mine_moe(
@@ -305,6 +368,7 @@ fn mine_moe(
         mining_config,
         signal_range,
         wrong_jackpot_hash,
+        seed,
     )
     .map_err(|e| py_err("MoE mining failed", e))
 }
@@ -431,6 +495,89 @@ fn value_err(e: impl std::fmt::Display) -> PyErr {
     pyo3::exceptions::PyValueError::new_err(e.to_string())
 }
 
+
+// ============================================================================
+// Certificate-version entry points
+//
+// V2 and V3 share circuits, circuit cache and wire format; ONLY the noise-seed
+// derivation differs (V3 salts each Merkle root with a domain salt committing the
+// matrix dimension). A share is bound to one derivation: a V2-mined share fails V3
+// verification and vice versa, so always verify with the version from the template's
+// `requiredcertversion`.
+// ============================================================================
+
+#[pyfunction]
+fn generate_proof_v2(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<PyProof> {
+    generate_proof_v2_impl(py, block_header, plain_proof, SeedDerivation::Legacy)
+}
+
+#[pyfunction]
+fn generate_proof_v3(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<PyProof> {
+    generate_proof_v2_impl(py, block_header, plain_proof, SeedDerivation::Salted)
+}
+
+#[pyfunction]
+fn generate_proof_v2_trusted(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<PyProof> {
+    generate_proof_v2_trusted_impl(py, block_header, plain_proof, SeedDerivation::Legacy)
+}
+
+#[pyfunction]
+fn generate_proof_v3_trusted(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<PyProof> {
+    generate_proof_v2_trusted_impl(py, block_header, plain_proof, SeedDerivation::Salted)
+}
+
+#[pyfunction]
+fn verify_proof_v2(py: Python<'_>, block_header: IncompleteBlockHeader, proof: &PyProof) -> PyResult<(bool, String)> {
+    verify_proof_v2_impl(py, block_header, proof, SeedDerivation::Legacy)
+}
+
+#[pyfunction]
+fn verify_proof_v3(py: Python<'_>, block_header: IncompleteBlockHeader, proof: &PyProof) -> PyResult<(bool, String)> {
+    verify_proof_v2_impl(py, block_header, proof, SeedDerivation::Salted)
+}
+
+#[pyfunction]
+fn verify_proof_v2_with_nbits(py: Python<'_>, block_header: IncompleteBlockHeader, proof: &PyProof, nbits_override: u32) -> PyResult<(bool, String)> {
+    verify_proof_v2_with_nbits_impl(py, block_header, proof, nbits_override, SeedDerivation::Legacy)
+}
+
+#[pyfunction]
+fn verify_proof_v3_with_nbits(py: Python<'_>, block_header: IncompleteBlockHeader, proof: &PyProof, nbits_override: u32) -> PyResult<(bool, String)> {
+    verify_proof_v2_with_nbits_impl(py, block_header, proof, nbits_override, SeedDerivation::Salted)
+}
+
+#[pyfunction]
+#[pyo3(signature = (block_header, plain_proof, nbits_override=None))]
+fn verify_plain_proof_v2(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof, nbits_override: Option<u32>) -> PyResult<(bool, String)> {
+    verify_plain_proof_v2_impl(py, block_header, plain_proof, nbits_override, SeedDerivation::Legacy)
+}
+
+#[pyfunction]
+#[pyo3(signature = (block_header, plain_proof, nbits_override=None))]
+fn verify_plain_proof_v3(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof, nbits_override: Option<u32>) -> PyResult<(bool, String)> {
+    verify_plain_proof_v2_impl(py, block_header, plain_proof, nbits_override, SeedDerivation::Salted)
+}
+
+#[pyfunction]
+fn verify_plain_proof_jackpot_v2(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<Vec<u8>> {
+    verify_plain_proof_jackpot_v2_impl(py, block_header, plain_proof, SeedDerivation::Legacy)
+}
+
+#[pyfunction]
+fn verify_plain_proof_jackpot_v3(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<Vec<u8>> {
+    verify_plain_proof_jackpot_v2_impl(py, block_header, plain_proof, SeedDerivation::Salted)
+}
+
+#[pyfunction]
+fn verify_plain_proof_jackpot_fast(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<Vec<u8>> {
+    verify_plain_proof_jackpot_fast_impl(py, block_header, plain_proof, SeedDerivation::Legacy)
+}
+
+#[pyfunction]
+fn verify_plain_proof_jackpot_fast_v3(py: Python<'_>, block_header: IncompleteBlockHeader, plain_proof: PlainProof) -> PyResult<Vec<u8>> {
+    verify_plain_proof_jackpot_fast_impl(py, block_header, plain_proof, SeedDerivation::Salted)
+}
+
 #[pyfunction]
 #[pyo3(name = "check_cert_version_eligible")]
 fn py_check_cert_version_eligible(cert_version: u32, plain_proof: PlainProof) -> PyResult<()> {
@@ -449,6 +596,7 @@ fn generate_proof_for_cert_version(
         CertificateVersion::ZkDense => generate_proof_v1(block_header, plain_proof),
         // generate_proof_v2 now takes `py` to release the GIL during the ~18s prove.
         CertificateVersion::ZkMoe => generate_proof_v2(py, block_header, plain_proof),
+        CertificateVersion::ZkSaltedSeed => generate_proof_v3(py, block_header, plain_proof),
     }
 }
 
@@ -464,6 +612,7 @@ fn verify_proof_for_cert_version(
         CertificateVersion::ZkDense => verify_proof_v1(block_header, proof),
         // verify_proof_v2 now takes `py` to release the GIL during the heavy block verify.
         CertificateVersion::ZkMoe => verify_proof_v2(py, block_header, proof),
+        CertificateVersion::ZkSaltedSeed => verify_proof_v3(py, block_header, proof),
     }
 }
 
@@ -483,6 +632,9 @@ fn verify_plain_proof_for_cert_version(
         // verify_plain_proof_v2 now takes `py` to release the GIL during the per-share verify.
         CertificateVersion::ZkMoe => {
             verify_plain_proof_v2(py, block_header, plain_proof, nbits_override)
+        }
+        CertificateVersion::ZkSaltedSeed => {
+            verify_plain_proof_v3(py, block_header, plain_proof, nbits_override)
         }
     }
 }
@@ -531,10 +683,13 @@ fn pearl_mining(m: &Bound<'_, pyo3::types::PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_pad_to_chunk_boundary, m)?)?;
     // V2 functions (current circuit; MoE and dense proofs)
     m.add_function(wrap_pyfunction!(generate_proof_v2, m)?)?;
+    m.add_function(wrap_pyfunction!(generate_proof_v2_trusted, m)?)?;
+    m.add_function(wrap_pyfunction!(simd_backend, m)?)?;
     m.add_function(wrap_pyfunction!(verify_proof_v2, m)?)?;
     m.add_function(wrap_pyfunction!(verify_proof_v2_with_nbits, m)?)?;
     m.add_function(wrap_pyfunction!(verify_plain_proof_v2, m)?)?;
     m.add_function(wrap_pyfunction!(verify_plain_proof_jackpot_v2, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_plain_proof_jackpot_fast, m)?)?;
     m.add_function(wrap_pyfunction!(plain_jackpot_from_strips, m)?)?;
     m.add_function(wrap_pyfunction!(clear_circuit_cache_v2, m)?)?;
     m.add_function(wrap_pyfunction!(warmup_prove_v2, m)?)?;
@@ -549,8 +704,18 @@ fn pearl_mining(m: &Bound<'_, pyo3::types::PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(warmup_prove_v1, m)?)?;
     m.add_function(wrap_pyfunction!(clear_v1_circuit_cache, m)?)?;
     // Certificate-version dispatchers (recommended entry points)
+    // ── V3 (salted noise-seed) — upstream Pearl SaltedSeedForkHeight ──
+    m.add_function(wrap_pyfunction!(generate_proof_v3, m)?)?;
+    m.add_function(wrap_pyfunction!(generate_proof_v3_trusted, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_proof_v3, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_proof_v3_with_nbits, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_plain_proof_v3, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_plain_proof_jackpot_v3, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_plain_proof_jackpot_fast_v3, m)?)?;
+
     m.add("CERT_VERSION_ZK_DENSE", CertificateVersion::ZkDense as u32)?;
     m.add("CERT_VERSION_ZK_MOE", CertificateVersion::ZkMoe as u32)?;
+    m.add("CERT_VERSION_ZK_SALTED_SEED", CertificateVersion::ZkSaltedSeed as u32)?;
     m.add_function(wrap_pyfunction!(py_check_cert_version_eligible, m)?)?;
     m.add_function(wrap_pyfunction!(generate_proof_for_cert_version, m)?)?;
     m.add_function(wrap_pyfunction!(verify_proof_for_cert_version, m)?)?;

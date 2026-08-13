@@ -33,6 +33,11 @@ const (
 	// which is paid to the WorkerAddress in the proof.
 	TxVersionInferenceProof = 4
 
+	// TxVersionInferenceGo is the transaction version for a transaction carrying
+	// an InferenceGoPayload OP_RETURN, signed by the authorised key configured in
+	// consensus. See blockchain/inferencego.go for the validation rules.
+	TxVersionInferenceGo = 5
+
 	// MaxTxInSequenceNum is the maximum sequence number the sequence field
 	// of a transaction input can be.
 	MaxTxInSequenceNum uint32 = 0xffffffff

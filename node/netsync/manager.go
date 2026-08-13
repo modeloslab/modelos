@@ -55,6 +55,18 @@ const (
 	// lowQualityStrikeLimit is the strike count at which a peer is
 	// downgraded back to low-quality (see nonTipStrikes).
 	lowQualityStrikeLimit = 5
+
+	// inboundInitialStrikes is the handicap an inbound (unsolicited) peer starts
+	// with. It must stay BELOW lowQualityStrikeLimit: starting at the limit gates
+	// the peer out of block download before it has done anything wrong, and it
+	// then cannot earn its way back.
+	inboundInitialStrikes = 3
+
+	// strikeDecayInterval is how often a single accumulated strike is forgiven.
+	// Without decay a peer that misbehaved once — or hit a bad patch during a
+	// reorg storm — stays downgraded for the life of the connection, so the
+	// network never recovers from a transient event.
+	strikeDecayInterval = 10 * time.Minute
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
@@ -175,24 +187,58 @@ type peerSyncState struct {
 	requestedTxns   map[chainhash.Hash]struct{}
 	requestedBlocks map[chainhash.Hash]struct{}
 
-	// nonTipStrikes counts consecutive non-tip-extending blocks from
-	// this peer. Starts at lowQualityStrikeLimit for inbound peers, 0
-	// for outbound peers; resets to 0 on a tip-extending block;
-	// saturates on each accepted-but-not-tip one.
+	// nonTipStrikes counts genuine faults from this peer (blocks that failed
+	// consensus validation). Starts at inboundInitialStrikes for inbound peers
+	// and 0 for outbound ones; resets to 0 on a tip-extending block; saturates
+	// at lowQualityStrikeLimit. Decays one strike per strikeDecayInterval — read
+	// through decayedStrikes, never directly.
 	nonTipStrikes int
+
+	// lastStrikeDecay is when a strike was last forgiven for this peer.
+	lastStrikeDecay time.Time
+}
+
+// decayedStrikes returns the peer's strike count with elapsed decay applied,
+// folding any forgiven strikes back into the stored count.
+//
+// Decay is applied lazily on read rather than by a timer: it costs nothing when
+// idle, and there is no goroutine or tick to keep in step with peer lifetime.
+func (s *peerSyncState) decayedStrikes() int {
+	if s.nonTipStrikes == 0 {
+		return 0
+	}
+	if s.lastStrikeDecay.IsZero() {
+		s.lastStrikeDecay = time.Now()
+		return s.nonTipStrikes
+	}
+	if forgiven := int(time.Since(s.lastStrikeDecay) / strikeDecayInterval); forgiven > 0 {
+		if forgiven >= s.nonTipStrikes {
+			s.nonTipStrikes = 0
+		} else {
+			s.nonTipStrikes -= forgiven
+		}
+		s.lastStrikeDecay = s.lastStrikeDecay.Add(
+			time.Duration(forgiven) * strikeDecayInterval)
+	}
+	return s.nonTipStrikes
 }
 
 // isPeerHighQuality reports whether the peer should bypass the
 // inv -> getheaders -> getdata gate.
 func isPeerHighQuality(state *peerSyncState) bool {
-	return state.nonTipStrikes < lowQualityStrikeLimit
+	return state.decayedStrikes() < lowQualityStrikeLimit
 }
 
 // strikeNonTip records that a block from this peer did not extend
 // our tip (orphan, rejected, or accepted on a side chain).
 func (s *peerSyncState) strikeNonTip() {
+	// Apply any pending decay first, so an old strike is not counted twice.
+	s.decayedStrikes()
 	if s.nonTipStrikes < lowQualityStrikeLimit {
 		s.nonTipStrikes++
+	}
+	if s.lastStrikeDecay.IsZero() {
+		s.lastStrikeDecay = time.Now()
 	}
 }
 
@@ -503,7 +549,22 @@ func (sm *SyncManager) handleNewPeerMsg(peer *peerpkg.Peer) {
 
 	// Initialize the peer state.
 	isSyncCandidate := sm.isSyncCandidate(peer)
-	initialStrikes := lowQualityStrikeLimit
+	// Inbound peers start with a HANDICAP but not at the limit.
+	//
+	// An unsolicited inbound connection is less trusted than one we dialled, so
+	// it does not begin on equal footing. But starting it AT lowQualityStrikeLimit
+	// meant every inbound peer was gated out of the block-download path from the
+	// moment it connected (isPeerHighQuality is false at the limit), and could
+	// only earn its way out by delivering a tip-extending block — which is
+	// precisely what the gate stops us from requesting from it. That is why two
+	// ordinary nodes connecting to each other struggled to follow the tip
+	// together while a node talking to a seed (an OUTBOUND connection, and so
+	// ungated) was fine.
+	//
+	// Starting mid-scale keeps the trust asymmetry — an inbound peer still hits
+	// the limit after fewer real faults than an outbound one — without
+	// pre-emptively silencing an honest peer.
+	initialStrikes := inboundInitialStrikes
 	if !peer.Inbound() {
 		initialStrikes = 0
 	}
@@ -512,6 +573,7 @@ func (sm *SyncManager) handleNewPeerMsg(peer *peerpkg.Peer) {
 		requestedTxns:   make(map[chainhash.Hash]struct{}),
 		requestedBlocks: make(map[chainhash.Hash]struct{}),
 		nonTipStrikes:   initialStrikes,
+		lastStrikeDecay: time.Now(),
 	}
 
 	// Announce that we support high-bandwidth compact blocks (BIP-152). Peers
@@ -847,12 +909,34 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) error {
 	// handling, etc.
 	isMainChain, isOrphan, err := sm.chain.ProcessBlock(bmsg.block, behaviorFlags)
 
-	// Strike accounting: a single decision point based on ProcessBlock's
-	// result rather than re-deriving it from chain state.
-	if isMainChain {
+	// Strike accounting: a single decision point based on ProcessBlock's result
+	// rather than re-deriving it from chain state.
+	//
+	// A strike means "this peer is feeding us blocks that do not help us follow
+	// the chain", and ONLY a genuine fault earns one. In particular a VALID
+	// SIDE-CHAIN block does not: when two miners find a block at the same height
+	// the losing block is honest, and whichever peers relayed it did exactly the
+	// right thing. Penalising that is self-reinforcing on a chain with a real
+	// fork rate — peers hit the strike limit, get gated out of the block-download
+	// path (see isPeerHighQuality), propagation slows, which produces MORE forks,
+	// which produces more strikes. Orphans are excluded for the same reason: they
+	// are the normal consequence of blocks arriving out of order during a reorg,
+	// not misbehaviour.
+	//
+	// What still strikes: a block that fails consensus validation (a rule error
+	// other than "we already have it"), which is the only case that actually
+	// signals a bad or hostile peer.
+	switch {
+	case isMainChain:
+		// Extended our tip: clear the record.
 		state.nonTipStrikes = 0
-	} else if ruleErr, ok := err.(blockchain.RuleError); !ok || ruleErr.ErrorCode != blockchain.ErrDuplicateBlock {
-		state.strikeNonTip()
+	case err == nil || isOrphan:
+		// Valid side-chain block, or an orphan we will resolve by requesting its
+		// parents. Honest behaviour — no strike.
+	default:
+		if ruleErr, ok := err.(blockchain.RuleError); !ok || ruleErr.ErrorCode != blockchain.ErrDuplicateBlock {
+			state.strikeNonTip()
+		}
 	}
 	if err != nil {
 		// When the error is a rule error, it means the block was simply

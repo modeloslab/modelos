@@ -4,7 +4,7 @@ use plonky2_field::goldilocks_field::GoldilocksField;
 
 use crate::{
     api::{
-        proof::{IncompleteBlockHeader, PublicProofParams, ZKProof},
+        proof::{IncompleteBlockHeader, PublicProofParams, SeedDerivation, ZKProof},
         proof_utils::{CompiledPublicParams, compute_jackpot_hash, hash_to_u32_field_array},
         sanity_checks::check_jackpot_against_nbits,
     },
@@ -117,9 +117,10 @@ pub fn verify_plain_proof(
     block_header: &IncompleteBlockHeader,
     plain_proof: &PlainProof,
     nbits_override: Option<u32>,
+    seed_derivation: SeedDerivation,
 ) -> Result<()> {
     // Parse the plain proof to get private and public params
-    let (private_params, mut public_params) = plain_proof.parse_proof(*block_header)?;
+    let (private_params, mut public_params) = plain_proof.parse_proof(*block_header, seed_derivation)?;
 
     // Perform public params sanity check
     public_params.sanity_check()?;
@@ -157,8 +158,34 @@ pub fn verify_plain_proof(
 pub fn verify_plain_proof_jackpot(
     block_header: &IncompleteBlockHeader,
     plain_proof: &PlainProof,
+    seed_derivation: SeedDerivation,
 ) -> Result<[u8; 32]> {
-    let (private_params, mut public_params) = plain_proof.parse_proof(*block_header)?;
+    let (private_params, mut public_params) = plain_proof.parse_proof(*block_header, seed_derivation)?;
+    public_params.sanity_check()?;
+    for strip in private_params.s_a.iter().chain(private_params.s_b.iter()) {
+        for &val in strip {
+            ensure!((-64..=64).contains(&val), "Matrix value {} out of range [-64, 64]", val);
+        }
+    }
+    let compiled = CompiledPublicParams::from(&public_params);
+    let noise = compute_noise(&compiled);
+    let jackpot = compute_jackpot(&compiled, &private_params.s_a, &private_params.s_b, &noise);
+    public_params.hash_jackpot = compute_jackpot_hash(&jackpot, compiled.a_noise_seed());
+    Ok(public_params.hash_jackpot)
+}
+
+/// FAST jackpot for pool block-SCREENING: byte-identical to `verify_plain_proof_jackpot` for an HONEST
+/// witness, but uses `parse_proof_unverified` so it SKIPS the BLAKE3 Merkle membership recompute
+/// (`evaluate_blake` — the ~190ms cost). The compute path (noise → jackpot → hash) is IDENTICAL, so an
+/// honest witness yields the exact same jackpot; a forged witness could supply arbitrary strips, so
+/// this MUST NOT be a sole consensus check — the pool runs the FULL `verify_plain_proof_jackpot`/`_v2`
+/// (membership) before proving/submitting a block, plus a random anti-cheat sample of regular shares.
+pub fn verify_plain_proof_jackpot_fast(
+    block_header: &IncompleteBlockHeader,
+    plain_proof: &PlainProof,
+    seed_derivation: SeedDerivation,
+) -> Result<[u8; 32]> {
+    let (private_params, mut public_params) = plain_proof.parse_proof_unverified(*block_header, seed_derivation)?;
     public_params.sanity_check()?;
     for strip in private_params.s_a.iter().chain(private_params.s_b.iter()) {
         for &val in strip {

@@ -25,10 +25,14 @@ const (
 	// Revision is an optional 4th version component for hotfix / sub-patch
 	// releases (e.g. 1.0.7.5). When 0 the version string stays 3-part
 	// (Major.Minor.Patch).
+	// 1.0.7.9: Pearl V3 salted noise-seed support (merged mining survives Pearl's
+	// SaltedSeedForkHeight), netsync peer-quality fixes that stopped honest peers
+	// being penalised for relaying side-chain blocks during a fork, and protocol
+	// version 2 with the acceptance floor deliberately left at 1.
 	// 1.0.7.8: fix the coinbase-witness stripping in BIP-152 compact-block relay
 	// (blocktxn / cmpctblock / full-block fallback now use witness encoding), which
 	// caused the network-wide "coinbase has 0 items in its witness stack" sync stall.
-	Revision uint = 8
+	Revision uint = 9
 
 	// PreRelease MUST only contain characters from semanticAlphabet
 	// per the semantic versioning spec.

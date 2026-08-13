@@ -3,7 +3,7 @@
 use std::os::raw::c_char;
 use std::slice;
 
-use zk_pow::api::proof::{IncompleteBlockHeader, MiningConfiguration, PublicProofParams};
+use zk_pow::api::proof::{SeedDerivation, IncompleteBlockHeader, MiningConfiguration, PublicProofParams};
 use zk_pow::api::prove;
 use zk_pow::ffi::mine::{mine as ffi_mine, mine_moe as ffi_mine_moe};
 use zk_pow::ffi::plain_proof::PlainProof;
@@ -25,16 +25,16 @@ use crate::common::{acquire_cache, catch_panic, set_error_msg, CZKProof, MAX_ZK_
 /// - All pointers must be valid
 /// - `zk_proof_out.proof_blob` must have capacity `MAX_ZK_PROOF_SIZE`
 /// - `error_msg_out` must be null or a valid pointer to a caller-allocated buffer of `ERROR_MSG_MAX_SIZE` bytes
-#[no_mangle]
-pub unsafe extern "C" fn mine(
+unsafe fn mine_impl(
     m: u32,
     n: u32,
     block_header: *const IncompleteBlockHeader,
     mining_config: *const [u8; crate::common::MINING_CONFIG_SERIALIZED_SIZE],
     zk_proof_out: *mut CZKProof,
     error_msg_out: *mut c_char,
+    seed_derivation: SeedDerivation,
 ) -> i32 {
-    mine_inner(block_header, mining_config, zk_proof_out, error_msg_out, |header, config| {
+    mine_inner(block_header, mining_config, zk_proof_out, error_msg_out, seed_derivation, |header, config| {
         ffi_mine(
             m as usize,
             n as usize,
@@ -43,6 +43,7 @@ pub unsafe extern "C" fn mine(
             config,
             None,
             false,
+            seed_derivation,
         )
     })
 }
@@ -60,16 +61,16 @@ pub unsafe extern "C" fn mine(
 /// - `error_msg_out` must be null or a valid pointer to a caller-allocated buffer of `ERROR_MSG_MAX_SIZE` bytes
 ///
 /// `e` and `top_k` are read from the serialized `mining_config` trailer (committed in the job_key).
-#[no_mangle]
-pub unsafe extern "C" fn mine_moe(
+unsafe fn mine_moe_impl(
     m: u32,
     n: u32,
     block_header: *const IncompleteBlockHeader,
     mining_config: *const [u8; crate::common::MINING_CONFIG_SERIALIZED_SIZE],
     zk_proof_out: *mut CZKProof,
     error_msg_out: *mut c_char,
+    seed_derivation: SeedDerivation,
 ) -> i32 {
-    mine_inner(block_header, mining_config, zk_proof_out, error_msg_out, |header, config| {
+    mine_inner(block_header, mining_config, zk_proof_out, error_msg_out, seed_derivation, |header, config| {
         ffi_mine_moe(
             m as usize,
             n as usize,
@@ -78,6 +79,7 @@ pub unsafe extern "C" fn mine_moe(
             config,
             None,
             false,
+            seed_derivation,
         )
     })
 }
@@ -95,6 +97,7 @@ unsafe fn mine_inner(
     mining_config: *const [u8; crate::common::MINING_CONFIG_SERIALIZED_SIZE],
     zk_proof_out: *mut CZKProof,
     error_msg_out: *mut c_char,
+    seed_derivation: SeedDerivation,
     do_mine: impl FnOnce(IncompleteBlockHeader, MiningConfiguration) -> anyhow::Result<PlainProof>,
 ) -> i32 {
     if block_header.is_null() || mining_config.is_null() || zk_proof_out.is_null() {
@@ -117,7 +120,7 @@ unsafe fn mine_inner(
         return 2;
     }
 
-    let result = match mine_and_prove(error_msg_out, header, || do_mine(header, config)) {
+    let result = match mine_and_prove(error_msg_out, header, seed_derivation, || do_mine(header, config)) {
         Some(r) => r,
         None => return 2,
     };
@@ -143,6 +146,7 @@ unsafe fn mine_inner(
 unsafe fn mine_and_prove(
     error_msg_out: *mut c_char,
     header: IncompleteBlockHeader,
+    seed_derivation: SeedDerivation,
     mine_fn: impl FnOnce() -> anyhow::Result<PlainProof>,
 ) -> Option<prove::ProveResult> {
     let proof = match catch_panic(mine_fn) {
@@ -164,7 +168,7 @@ unsafe fn mine_and_prove(
             return None;
         }
     };
-    match catch_panic(|| prove::zk_prove_plain_proof(header, &proof, &mut cache, false)) {
+    match catch_panic(|| prove::zk_prove_plain_proof(header, &proof, &mut cache, false, seed_derivation)) {
         Ok(Ok(r)) => Some(r),
         Ok(Err(e)) => {
             set_error_msg(error_msg_out, &format!("Prove failed: {}", e));
@@ -175,4 +179,69 @@ unsafe fn mine_and_prove(
             None
         }
     }
+}
+
+/// Mine + prove under the pre-V3 (legacy) noise-seed derivation. Unchanged ABI.
+///
+/// # Safety
+/// Same requirements as `mine_impl`.
+#[no_mangle]
+pub unsafe extern "C" fn mine(
+    m: u32,
+    n: u32,
+    block_header: *const IncompleteBlockHeader,
+    mining_config: *const [u8; crate::common::MINING_CONFIG_SERIALIZED_SIZE],
+    zk_proof_out: *mut CZKProof,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    mine_impl(m, n, block_header, mining_config, zk_proof_out, error_msg_out, SeedDerivation::Legacy)
+}
+
+/// Mine + prove under the V3 salted noise-seed derivation (Pearl SaltedSeedForkHeight and later).
+/// Use this whenever `getblocktemplate` reports `requiredcertversion: 3`.
+///
+/// # Safety
+/// Same requirements as `mine`.
+#[no_mangle]
+pub unsafe extern "C" fn mine_v3(
+    m: u32,
+    n: u32,
+    block_header: *const IncompleteBlockHeader,
+    mining_config: *const [u8; crate::common::MINING_CONFIG_SERIALIZED_SIZE],
+    zk_proof_out: *mut CZKProof,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    mine_impl(m, n, block_header, mining_config, zk_proof_out, error_msg_out, SeedDerivation::Salted)
+}
+
+/// MoE mine + prove, legacy derivation. Unchanged ABI.
+///
+/// # Safety
+/// Same requirements as `mine_moe_impl`.
+#[no_mangle]
+pub unsafe extern "C" fn mine_moe(
+    m: u32,
+    n: u32,
+    block_header: *const IncompleteBlockHeader,
+    mining_config: *const [u8; crate::common::MINING_CONFIG_SERIALIZED_SIZE],
+    zk_proof_out: *mut CZKProof,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    mine_moe_impl(m, n, block_header, mining_config, zk_proof_out, error_msg_out, SeedDerivation::Legacy)
+}
+
+/// MoE mine + prove, V3 salted derivation.
+///
+/// # Safety
+/// Same requirements as `mine_moe`.
+#[no_mangle]
+pub unsafe extern "C" fn mine_moe_v3(
+    m: u32,
+    n: u32,
+    block_header: *const IncompleteBlockHeader,
+    mining_config: *const [u8; crate::common::MINING_CONFIG_SERIALIZED_SIZE],
+    zk_proof_out: *mut CZKProof,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    mine_moe_impl(m, n, block_header, mining_config, zk_proof_out, error_msg_out, SeedDerivation::Salted)
 }

@@ -7,7 +7,7 @@ use std::os::raw::c_char;
 use std::slice;
 
 use crate::common::MAX_ZK_PROOF_SIZE;
-use zk_pow::api::proof::{IncompleteBlockHeader, PublicProofParams, ZKProof};
+use zk_pow::api::proof::{IncompleteBlockHeader, PublicProofParams, SeedDerivation, ZKProof};
 use zk_pow::api::verify;
 use zk_pow::ffi::plain_proof::PlainProof;
 
@@ -28,6 +28,7 @@ unsafe fn verify_zk_proof_inner(
     zk_proof: *const CZKProof,
     nbits_override: Option<u32>,
     error_msg_out: *mut c_char,
+    derivations: &[SeedDerivation],
 ) -> i32 {
     // Wrap in catch_unwind to prevent panics from crossing FFI boundary
     let result = catch_panic(|| {
@@ -58,13 +59,6 @@ unsafe fn verify_zk_proof_inner(
 
         let plonky2_proof = slice::from_raw_parts(zk_proof_ref.proof_blob, zk_proof_ref.proof_blob_len);
         let public_data = &zk_proof_ref.public_data[..zk_proof_ref.public_data_len];
-        let (params, zk_proof) = match ZKProof::deserialize(*block_header, public_data, plonky2_proof) {
-            Ok(r) => r,
-            Err(e) => {
-                set_error_msg(error_msg_out, &format!("{}", e));
-                return 1;
-            }
-        };
 
         // Acquire circuit cache (immutable - verifier doesn't modify cache). A
         // missing/corrupt cache returns a clean, actionable error instead of
@@ -79,17 +73,30 @@ unsafe fn verify_zk_proof_inner(
             }
         };
 
-        // Verify using cached circuits only (no compilation)
-        match verify::verify_block_cached_circuits_only(&params, &zk_proof, &cache, nbits_override) {
-            Ok(_) => {
-                set_error_msg(error_msg_out, "Proof verified successfully");
-                0
-            }
-            Err(e) => {
-                set_error_msg(error_msg_out, &format!("{}", e));
-                1
+        // Verify using cached circuits only (no compilation). `derivations` is normally a
+        // single entry; the AuxPoW path passes both because the embedded Pearl proof may be
+        // pre- or post-SaltedSeedForkHeight and the derivation is NOT carried on the wire.
+        // A given proof verifies under exactly one derivation, so trying both cannot make an
+        // invalid proof pass — it only costs a second verify on the failing branch.
+        let mut last_err = String::from("no seed derivation attempted");
+        for &derivation in derivations {
+            let (params, zk_proof) = match ZKProof::deserialize(*block_header, derivation, public_data, plonky2_proof) {
+                Ok(r) => r,
+                Err(e) => {
+                    last_err = format!("{}", e);
+                    continue;
+                }
+            };
+            match verify::verify_block_cached_circuits_only(&params, &zk_proof, &cache, nbits_override) {
+                Ok(_) => {
+                    set_error_msg(error_msg_out, "Proof verified successfully");
+                    return 0;
+                }
+                Err(e) => last_err = format!("{}", e),
             }
         }
+        set_error_msg(error_msg_out, &last_err);
+        1
     });
 
     match result {
@@ -127,7 +134,7 @@ pub unsafe extern "C" fn verify_zk_proof_v2(
     zk_proof: *const CZKProof,
     error_msg_out: *mut c_char,
 ) -> i32 {
-    verify_zk_proof_inner(block_header, zk_proof, None, error_msg_out)
+    verify_zk_proof_inner(block_header, zk_proof, None, error_msg_out, &[SeedDerivation::Legacy])
 }
 
 /// Verify a ZK proof against public parameters, overriding the difficulty with the given nbits.
@@ -151,7 +158,48 @@ pub unsafe extern "C" fn verify_zk_proof_v2_with_nbits(
     nbits_override: u32,
     error_msg_out: *mut c_char,
 ) -> i32 {
-    verify_zk_proof_inner(block_header, zk_proof, Some(nbits_override), error_msg_out)
+    verify_zk_proof_inner(block_header, zk_proof, Some(nbits_override), error_msg_out, &[SeedDerivation::Legacy])
+}
+
+/// AuxPoW-only verify: accepts an embedded Pearl proof under EITHER noise-seed derivation.
+///
+/// Pearl hard-forked its seed derivation at `SaltedSeedForkHeight` (certificate V3): each Merkle
+/// root is salted with a domain key that also commits the matrix dimension. The derivation is NOT
+/// carried on the wire — it comes from the parent chain's certificate version, which a modelOS node
+/// does not track. So we try Salted first (all post-fork parents) and fall back to Legacy (pre-fork
+/// parents and historical replay).
+///
+/// This deliberately does NOT touch the commitment rule. modelOS has always required aux pools to
+/// normalise the embedded Pearl header's ProofCommitment to the V1 form (that predates this fork —
+/// it applied to V2 parents since the MoE fork), and that stays true, so a pool that was merged
+/// mining before the fork needs no change beyond normalising from 3 instead of 2. Keeping exactly
+/// one accepted commitment form is also what preserves the anti-malleability property: one proof
+/// can still only ever mint one modelOS block.
+///
+/// Trying both derivations cannot let an invalid proof through — a proof is bound to exactly one
+/// derivation — it only costs a second cached verify on the rejecting branch.
+///
+/// # Returns
+/// - 0: verified and accepted under one of the derivations
+/// - 1: rejected under both
+/// - 2: system error (could not run verification)
+///
+/// # Safety
+/// Same requirements as `verify_zk_proof_v2_with_nbits`.
+#[no_mangle]
+pub unsafe extern "C" fn verify_zk_proof_auxpow_with_nbits(
+    block_header: *const IncompleteBlockHeader,
+    zk_proof: *const CZKProof,
+    nbits_override: u32,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    verify_zk_proof_inner(
+        block_header,
+        zk_proof,
+        Some(nbits_override),
+        error_msg_out,
+        &[SeedDerivation::Salted, SeedDerivation::Legacy],
+    )
 }
 
 /// Node-exact "does this witness clear `nbits_override`?" check — NO ZK proof, NO circuit cache.
@@ -173,13 +221,13 @@ pub unsafe extern "C" fn verify_zk_proof_v2_with_nbits(
 /// - `witness_bytes` must point to `witness_len` bytes (a serialized `PlainProof`, current or
 ///   legacy V1 layout — see `PlainProof::deserialize_compat`).
 /// - `error_msg_out` must be null or a caller-allocated `ERROR_MSG_MAX_SIZE` buffer.
-#[no_mangle]
-pub unsafe extern "C" fn verify_plain_proof(
+unsafe fn verify_plain_proof_impl(
     block_header: *const IncompleteBlockHeader,
     witness_bytes: *const u8,
     witness_len: usize,
     nbits_override: u32,
     error_msg_out: *mut c_char,
+    seed_derivation: SeedDerivation,
 ) -> i32 {
     let result = catch_panic(|| {
         if block_header.is_null() || witness_bytes.is_null() {
@@ -195,7 +243,7 @@ pub unsafe extern "C" fn verify_plain_proof(
                 return 2;
             }
         };
-        match verify::verify_plain_proof(&header, &plain_proof, Some(nbits_override)) {
+        match verify::verify_plain_proof(&header, &plain_proof, Some(nbits_override), seed_derivation) {
             Ok(()) => {
                 set_error_msg(error_msg_out, "clears target");
                 0
@@ -295,4 +343,36 @@ pub unsafe extern "C" fn verify_zk_proof_v1(
             2
         }
     }
+}
+
+/// Witness block-detection gate under the pre-V3 (legacy) derivation. Unchanged ABI.
+///
+/// # Safety
+/// Same requirements as `verify_plain_proof_impl`.
+#[no_mangle]
+pub unsafe extern "C" fn verify_plain_proof(
+    block_header: *const IncompleteBlockHeader,
+    witness_bytes: *const u8,
+    witness_len: usize,
+    nbits_override: u32,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    verify_plain_proof_impl(block_header, witness_bytes, witness_len, nbits_override, error_msg_out, SeedDerivation::Legacy)
+}
+
+/// Witness block-detection gate under the V3 salted derivation. The miner must use the
+/// derivation matching the template's `requiredcertversion`, or its jackpot — and therefore
+/// its block/share verdict — will not match the node's.
+///
+/// # Safety
+/// Same requirements as `verify_plain_proof`.
+#[no_mangle]
+pub unsafe extern "C" fn verify_plain_proof_v3(
+    block_header: *const IncompleteBlockHeader,
+    witness_bytes: *const u8,
+    witness_len: usize,
+    nbits_override: u32,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    verify_plain_proof_impl(block_header, witness_bytes, witness_len, nbits_override, error_msg_out, SeedDerivation::Salted)
 }

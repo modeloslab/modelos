@@ -109,8 +109,28 @@ func (sp *serverPeer) OnCmpctBlock(_ *peer.Peer, msg *wire.MsgCmpctBlock) {
 	blockHash := msg.BlockHash()
 	sp.AddKnownInventory(wire.NewInvVect(wire.InvTypeBlock, &blockHash))
 
-	// If we already have this block, ignore.
+	// A cmpctblock IS a block announcement, so it must feed the same per-peer
+	// bookkeeping an inv announcement does (see netsync handleInvMsg). Without
+	// this the sync manager never learns that a high-bandwidth peer has advanced:
+	// its height stays frozen at the value from the version handshake, and
+	// startSync's "does this candidate advertise a higher block than us?" test
+	// keeps failing against that stale number.
+	//
+	// That deadlocks a node that falls behind while connected only to
+	// high-bandwidth peers: it needs a sync peer to catch up, it can only pick a
+	// sync peer that advertises a greater height, and the only message that would
+	// have refreshed that height is the inv it no longer receives — because the
+	// peer is announcing via cmpctblock instead. Observed as two nodes sitting at
+	// different heights, permanently connected and permanently out of sync.
+	sp.UpdateLastAnnouncedBlock(&blockHash)
+
+	// If we already have this block, the announcement still tells us the peer is
+	// at least at that height — record it (mirrors handleInvMsg) so a peer that
+	// is ahead of us stays selectable as a sync peer, then ignore the block.
 	if have, err := sp.server.chain.HaveBlock(&blockHash); err == nil && have {
+		if h, err := sp.server.chain.BlockHeightByHash(&blockHash); err == nil {
+			sp.UpdateLastBlockHeight(h)
+		}
 		return
 	}
 

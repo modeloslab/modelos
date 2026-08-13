@@ -13,7 +13,7 @@ use std::slice;
 use std::sync::OnceLock;
 
 use zk_pow::api::prove;
-use zk_pow::api::proof::{IncompleteBlockHeader, PublicProofParams};
+use zk_pow::api::proof::{SeedDerivation, IncompleteBlockHeader, PublicProofParams};
 use zk_pow::ffi::plain_proof::PlainProof;
 
 use crate::common::{
@@ -80,13 +80,13 @@ fn lower_prover_priority() {}
 ///   `MAX_ZK_PROOF_SIZE` bytes.
 /// - `error_msg_out` must be null or a valid pointer to a caller-allocated buffer of
 ///   `ERROR_MSG_MAX_SIZE` bytes.
-#[no_mangle]
-pub unsafe extern "C" fn prove_plain_proof(
+unsafe fn prove_plain_proof_impl(
     block_header: *const IncompleteBlockHeader,
     witness_bytes: *const u8,
     witness_len: usize,
     zk_proof_out: *mut CZKProof,
     error_msg_out: *mut c_char,
+    seed_derivation: SeedDerivation,
 ) -> i32 {
     if block_header.is_null() || witness_bytes.is_null() || zk_proof_out.is_null() {
         set_error_msg(error_msg_out, "Null pointer");
@@ -136,7 +136,7 @@ pub unsafe extern "C" fn prove_plain_proof(
             // Propagate a missing/corrupt-cache error as a clean prove error
             // instead of panicking and poisoning the cache for all callers.
             let mut cache = acquire_cache()?;
-            prove::zk_prove_plain_proof(header, &plain_proof, &mut cache, false)
+            prove::zk_prove_plain_proof(header, &plain_proof, &mut cache, false, seed_derivation)
         })
     }) {
         Ok(Ok(r)) => r,
@@ -169,4 +169,34 @@ pub unsafe extern "C" fn prove_plain_proof(
 
     set_error_msg(error_msg_out, "Proof generation successful");
     0
+}
+
+/// Prove a witness under the pre-V3 (legacy) noise-seed derivation. Unchanged ABI.
+///
+/// # Safety
+/// Same requirements as `prove_plain_proof_impl`.
+#[no_mangle]
+pub unsafe extern "C" fn prove_plain_proof(
+    block_header: *const IncompleteBlockHeader,
+    witness_bytes: *const u8,
+    witness_len: usize,
+    zk_proof_out: *mut CZKProof,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    prove_plain_proof_impl(block_header, witness_bytes, witness_len, zk_proof_out, error_msg_out, SeedDerivation::Legacy)
+}
+
+/// Prove a witness under the V3 salted noise-seed derivation (Pearl SaltedSeedForkHeight onward).
+///
+/// # Safety
+/// Same requirements as `prove_plain_proof`.
+#[no_mangle]
+pub unsafe extern "C" fn prove_plain_proof_v3(
+    block_header: *const IncompleteBlockHeader,
+    witness_bytes: *const u8,
+    witness_len: usize,
+    zk_proof_out: *mut CZKProof,
+    error_msg_out: *mut c_char,
+) -> i32 {
+    prove_plain_proof_impl(block_header, witness_bytes, witness_len, zk_proof_out, error_msg_out, SeedDerivation::Salted)
 }

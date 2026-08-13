@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::proof::{
     IncompleteBlockHeader, MMAType, MiningConfiguration, MoEConfig, MoEParams, PeriodicPattern, PrivateProofParams,
-    PublicProofParams,
+    PublicProofParams, SeedDerivation,
 };
 use crate::circuit::chip::blake3::program::{AuxiliaryCvLocation, AuxiliaryMsgLocation, ProofSource, routing_blake_hotspot_rows};
 use crate::circuit::utils::macros::ensure_eq;
@@ -162,6 +162,20 @@ pub enum CertificateVersion {
     ZkDense = 1,
     /// V2: MoE and dense proofs.
     ZkMoe = 2,
+    /// V3: same wire layout as V2, salted noise-seed derivation.
+    /// (Upstream Pearl names this variant `ZkV3`; the discriminant 3 is what consensus sees.)
+    ZkSaltedSeed = 3,
+}
+
+impl CertificateVersion {
+    /// The noise-seed derivation this certificate version mandates. This is the
+    /// single version→derivation mapping; the `api` layer only sees [`SeedDerivation`].
+    pub fn seed_derivation(self) -> SeedDerivation {
+        match self {
+            Self::ZkDense | Self::ZkMoe => SeedDerivation::Legacy,
+            Self::ZkSaltedSeed => SeedDerivation::Salted,
+        }
+    }
 }
 
 impl TryFrom<u32> for CertificateVersion {
@@ -171,6 +185,7 @@ impl TryFrom<u32> for CertificateVersion {
         match version {
             v if v == Self::ZkDense as u32 => Ok(Self::ZkDense),
             v if v == Self::ZkMoe as u32 => Ok(Self::ZkMoe),
+            v if v == Self::ZkSaltedSeed as u32 => Ok(Self::ZkSaltedSeed),
             v => bail!("unknown certificate version: {v}"),
         }
     }
@@ -453,7 +468,34 @@ impl PlainProof {
     }
 
     /// Converts plain proof to Rust proof types, checks a,bt merkle roots match provided hashes.
-    pub fn parse_proof(&self, header: IncompleteBlockHeader) -> Result<(PrivateProofParams, PublicProofParams)> {
+    pub fn parse_proof(
+        &self,
+        header: IncompleteBlockHeader,
+        seed_derivation: SeedDerivation,
+    ) -> Result<(PrivateProofParams, PublicProofParams)> {
+        self.parse_proof_impl(header, true, seed_derivation)
+    }
+
+    /// Like `parse_proof` but SKIPS the BLAKE3 Merkle membership recompute (`evaluate_blake` — the
+    /// ~190ms verify cost). The returned strips are NOT proven to be members of the committed A/B
+    /// matrices, so the jackpot computed from them is byte-identical for an HONEST witness but a forged
+    /// witness could supply arbitrary strips. ONLY for pool block-SCREENING where a full
+    /// `parse_proof` (membership) still gates anything that spends money (block submit + anti-cheat
+    /// sample). NEVER a sole consensus check.
+    pub fn parse_proof_unverified(
+        &self,
+        header: IncompleteBlockHeader,
+        seed_derivation: SeedDerivation,
+    ) -> Result<(PrivateProofParams, PublicProofParams)> {
+        self.parse_proof_impl(header, false, seed_derivation)
+    }
+
+    fn parse_proof_impl(
+        &self,
+        header: IncompleteBlockHeader,
+        verify_membership: bool,
+        seed_derivation: SeedDerivation,
+    ) -> Result<(PrivateProofParams, PublicProofParams)> {
         let (m, n, k) = (self.m, self.n, self.k);
 
         for &tok in &self.a.row_indices {
@@ -466,6 +508,7 @@ impl PlainProof {
 
         let public = PublicProofParams {
             block_header: header,
+            seed_derivation,
             mining_config: MiningConfiguration {
                 common_dim: k as u32,
                 rank: self.noise_rank as u16,
@@ -510,15 +553,19 @@ impl PlainProof {
             external_cvs: compute_external_cvs(&cv_locs, self, k, public.job_key())?,
         };
 
-        let opt_hash_routing = self.moe.as_ref().map(|moe| moe.routing_proof.root);
-        let (hash_a, hash_b) = compiled
-            .blake_proof
-            .evaluate_blake(compiled.job_key, &private, opt_hash_routing)?;
-        ensure_eq!(hash_a, self.a.proof.root, "Hash A mismatch, job_key={:?}", compiled.job_key);
-        ensure_eq!(hash_b, self.bt.proof.root, "Hash B mismatch, job_key={:?}", compiled.job_key);
+        // BLAKE3 Merkle membership recompute — the ~190ms verify cost. Skipped for fast block-SCREENING
+        // (parse_proof_unverified); always run on the consensus path (parse_proof).
+        if verify_membership {
+            let opt_hash_routing = self.moe.as_ref().map(|moe| moe.routing_proof.root);
+            let (hash_a, hash_b) = compiled
+                .blake_proof
+                .evaluate_blake(compiled.job_key, &private, opt_hash_routing)?;
+            ensure_eq!(hash_a, self.a.proof.root, "Hash A mismatch, job_key={:?}", compiled.job_key);
+            ensure_eq!(hash_b, self.bt.proof.root, "Hash B mismatch, job_key={:?}", compiled.job_key);
 
-        if let Some(moe) = &self.moe {
-            verify_moe_routing(moe, &self.a.row_indices, compiled.job_key)?;
+            if let Some(moe) = &self.moe {
+                verify_moe_routing(moe, &self.a.row_indices, compiled.job_key)?;
+            }
         }
 
         Ok((private, public))
